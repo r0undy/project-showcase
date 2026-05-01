@@ -3,19 +3,26 @@
  *   POST — take a Puppeteer screenshot of a given URL, upload to Supabase storage,
  *          and return the public URL. Requires authentication.
  *
- * Uses @sparticuz/chromium + puppeteer-core for Vercel compatibility.
+ * Dev:  full `puppeteer` package (bundled Chromium, resolved via createRequire
+ *       to bypass Turbopack's module interception).
+ * Prod: puppeteer-core + @sparticuz/chromium (Vercel-compatible Lambda binary).
  */
 
+import { createRequire } from 'module';
 import { NextResponse } from 'next/server';
 import { requireAuth, errorResponse } from '@/lib/auth';
 import { createAdminSupabaseClient } from '@/lib/supabase';
 import { isValidUrl } from '@/lib/validation';
 
+// Force Node.js require() — dynamic import('puppeteer') gets intercepted by
+// Turbopack even when listed in serverExternalPackages.
+const _require = createRequire(import.meta.url);
+
 export interface ScreenshotResponse {
   screenshotUrl: string;
 }
 
-export const maxDuration = 60; // seconds — Puppeteer can be slow on cold start
+export const maxDuration = 10;
 
 export async function POST(request: Request): Promise<NextResponse> {
   const auth = await requireAuth(request);
@@ -36,59 +43,65 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   let browser;
   try {
-    const puppeteer = (await import('puppeteer-core')).default;
-
-    // @sparticuz/chromium ships a Linux-only binary — unusable on Windows/macOS
-    // local dev. In development we locate the system Chrome instead.
-    let launchOptions: Parameters<typeof puppeteer.launch>[0];
-
     if (process.env.NODE_ENV === 'development') {
-      const { existsSync } = await import('fs');
-      const candidates = [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        '/usr/bin/google-chrome',
-        '/usr/bin/chromium-browser',
-        '/usr/bin/chromium',
-      ];
-      const executablePath = candidates.find((p) => existsSync(p));
-      if (!executablePath) {
-        return errorResponse(
-          500,
-          'CHROME_NOT_FOUND',
-          'No Chrome installation found for local dev. Install Google Chrome and retry.',
-        );
-      }
-      launchOptions = {
-        executablePath,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const puppeteer = _require('puppeteer') as any;
+      browser = await puppeteer.launch({
         defaultViewport: { width: 1200, height: 630 },
         headless: true,
-      };
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
     } else {
-      const chromium = (await import('@sparticuz/chromium')).default;
-      launchOptions = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const puppeteer = _require('puppeteer-core') as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const chromium = _require('@sparticuz/chromium') as any;
+      browser = await puppeteer.launch({
         args: chromium.args,
         defaultViewport: { width: 1200, height: 630 },
         executablePath: await chromium.executablePath(),
         headless: chromium.headless as unknown as boolean,
-      };
+      });
     }
 
-    browser = await puppeteer.launch(launchOptions);
-
     const page = await browser.newPage();
-    // Give the page up to 20 s to load; fall back gracefully on network errors
-    await page.goto(url as string, { waitUntil: 'networkidle2', timeout: 20_000 });
+
+    // Block heavy resources to stay within the 10s Vercel Hobby limit
+    await page.setRequestInterception(true);
+    page.on('request', (req: { resourceType: () => string; abort: () => void; continue: () => void }) => {
+      const type = req.resourceType();
+      if (type === 'image' || type === 'media' || type === 'font') {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
+
+    try {
+      await page.goto(url as string, { waitUntil: 'domcontentloaded', timeout: 7_000 });
+    } catch (navErr) {
+      const msg = navErr instanceof Error ? navErr.message : String(navErr);
+      // ERR_BLOCKED_BY_CLIENT means Chrome killed the page session — no screenshot possible.
+      // Return a 422 so the form can fall back to manual upload gracefully.
+      if (msg.includes('ERR_BLOCKED_BY_CLIENT') || msg.includes('ERR_ABORTED')) {
+        await browser.close();
+        browser = undefined;
+        return errorResponse(
+          422,
+          'URL_BLOCKED',
+          'Chrome blocked this URL (likely HTTP or security filter). Upload a screenshot manually instead.',
+        );
+      }
+      // For other navigation errors (slow redirects, partial loads) continue and screenshot what loaded.
+      console.warn('[/api/screenshot] navigation warning:', msg);
+    }
+
     const screenshotBuffer = await page.screenshot({ type: 'png' });
     await browser.close();
     browser = undefined;
 
-    // Upload to Supabase storage
     const supabaseAdmin = createAdminSupabaseClient();
-    const timestamp = Date.now();
-    const storagePath = `screenshots/${user.id}/${timestamp}.png`;
+    const storagePath = `screenshots/${user.id}/${Date.now()}.png`;
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('project-screenshots')
@@ -108,14 +121,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       .from('project-screenshots')
       .getPublicUrl(storagePath);
 
-    const result: ScreenshotResponse = { screenshotUrl: publicData.publicUrl };
-    return NextResponse.json(result, { status: 200 });
+    return NextResponse.json({ screenshotUrl: publicData.publicUrl } satisfies ScreenshotResponse);
   } catch (err) {
     if (browser) {
       try { await browser.close(); } catch { /* ignore */ }
     }
-    return errorResponse(500, 'SCREENSHOT_ERROR', 'Failed to capture screenshot.', {
-      message: err instanceof Error ? err.message : String(err),
-    });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[/api/screenshot]', message);
+    return errorResponse(500, 'SCREENSHOT_ERROR', 'Failed to capture screenshot.', { message });
   }
 }

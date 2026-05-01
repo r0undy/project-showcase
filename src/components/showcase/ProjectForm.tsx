@@ -90,9 +90,18 @@ export function ProjectForm({ onSuccess, onCancel, initialData }: ProjectFormPro
       if (res.ok) {
         const data = await res.json();
         setPreviewUrl(data.screenshotUrl);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 422) {
+          setErrors((e) => ({ ...e, upload: 'Auto-screenshot blocked for this URL. Upload an image manually.' }));
+        } else {
+          setErrors((e) => ({ ...e, upload: data.message ?? 'Screenshot failed. Upload an image manually.' }));
+        }
+        setPreviewSource(null);
       }
     } catch {
-      // screenshot is optional
+      setErrors((e) => ({ ...e, upload: 'Screenshot failed. Upload an image manually.' }));
+      setPreviewSource(null);
     } finally {
       setPreviewLoading(false);
     }

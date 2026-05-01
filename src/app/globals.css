@@ -94,6 +94,18 @@ body {
   display: none;
 }
 
+/* Masonry layout using CSS columns */
+.masonry-grid {
+  columns: 1;
+  column-gap: 20px;
+}
+@media (min-width: 640px) {
+  .masonry-grid { columns: 2; }
+}
+@media (min-width: 1024px) {
+  .masonry-grid { columns: 3; }
+}
+
 /* Smooth scrolling */
 @media (prefers-reduced-motion: no-preference) {
   html {

@@ -73,7 +73,7 @@ export function QuickNav({ headings }: QuickNavProps) {
       // own scroll height so a long outline can scroll internally instead
       // of pushing past the viewport bottom.
       style={{ maxHeight: 'calc(100vh - 8rem)', overflowY: 'auto' }}
-      className="rounded-2xl border border-border/60 bg-secondary/60 backdrop-blur-sm"
+      className="hide-scrollbar rounded-2xl border border-border/60 bg-secondary/60 backdrop-blur-sm"
     >
       <div style={{ padding: 'clamp(1rem, 1.6vw, 1.25rem)' }}>
         <p

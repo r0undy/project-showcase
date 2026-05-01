@@ -92,7 +92,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   // Fetch projects with author username via the foreign-key embed.
   const { data: projectsData, error: projectsErr } = await supabase
     .from('projects')
-    .select('*, author:users!projects_author_id_fkey(username)')
+    .select('*, author:users!projects_author_id_fkey(username, avatar_url)')
     .order('created_at', { ascending: false });
 
   if (projectsErr) {
@@ -114,7 +114,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   // grows we'd switch to a Postgres view or RPC that returns COUNT(*) directly.
   const { data: reactionsData, error: reactionsErr } = await supabase
     .from('reactions')
-    .select('project_id, user_id')
+    .select('project_id, user_id, reaction_type')
     .in('project_id', projectIds);
 
   if (reactionsErr) {
@@ -123,22 +123,40 @@ export async function GET(request: Request): Promise<NextResponse> {
     });
   }
 
-  const counts = new Map<string, number>();
-  const reactedByUser = new Set<string>(); // project_ids the current user has reacted to
+  // Group reactions: projectId → (emoji → count)
+  const emojiGroups = new Map<string, Map<string, number>>();
+  // projectId → set of emojis the current user has reacted with
+  const userReacted = new Map<string, Set<string>>();
   for (const r of reactionsData ?? []) {
-    counts.set(r.project_id, (counts.get(r.project_id) ?? 0) + 1);
-    if (currentUserId && r.user_id === currentUserId) reactedByUser.add(r.project_id);
+    if (!emojiGroups.has(r.project_id)) emojiGroups.set(r.project_id, new Map());
+    const group = emojiGroups.get(r.project_id)!;
+    group.set(r.reaction_type, (group.get(r.reaction_type) ?? 0) + 1);
+    if (currentUserId && r.user_id === currentUserId) {
+      if (!userReacted.has(r.project_id)) userReacted.set(r.project_id, new Set());
+      userReacted.get(r.project_id)!.add(r.reaction_type);
+    }
   }
 
   const enriched: ProjectWithAuthor[] = projects.map((p) => {
-    // Supabase types the embed as an array OR object depending on relation arity.
-    // We selected by FK on a single-record relation, so it can be either.
     const authorObj = Array.isArray(p.author) ? p.author[0] : p.author;
+    const group = emojiGroups.get(p.id) ?? new Map<string, number>();
+    const reactedSet = userReacted.get(p.id) ?? new Set<string>();
+    const reactions = Array.from(group.entries()).map(([emoji, count]) => ({
+      emoji,
+      count,
+      hasReacted: reactedSet.has(emoji),
+    }));
+    const reactionCount = reactions.reduce((sum, r) => sum + r.count, 0);
     return {
       ...rowToProject(p),
-      author: { username: authorObj?.username ?? 'unknown' },
-      reactionCount: counts.get(p.id) ?? 0,
-      hasReacted: reactedByUser.has(p.id),
+      author: {
+        username: authorObj?.username ?? 'unknown',
+        avatarUrl: authorObj?.avatar_url ?? undefined,
+      },
+      reactions,
+      reactionCount,
+      hasReacted: reactedSet.size > 0,
+      reactedEmojis: Array.from(reactedSet),
     };
   });
 

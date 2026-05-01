@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getBrowserSupabaseClient } from '@/lib/supabase';
 import type { ProjectWithAuthor } from '@/types';
 import { ProjectCard } from './ProjectCard';
+import { ProjectSidebar } from './ProjectSidebar';
 import { SubmitProjectModal } from './SubmitProjectModal';
 
 interface ShowcaseGridProps {
@@ -17,6 +18,7 @@ export function ShowcaseGrid({ initialProjects }: ShowcaseGridProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectWithAuthor | null>(null);
   const [reactingIds, setReactingIds] = useState<Set<string>>(new Set());
+  const [selectedProject, setSelectedProject] = useState<ProjectWithAuthor | null>(null);
 
   function handleEditProject(project: ProjectWithAuthor) {
     setEditingProject(project);
@@ -55,47 +57,64 @@ export function ShowcaseGrid({ initialProjects }: ShowcaseGridProps) {
     }
   }, []);
 
-  async function handleReact(projectId: string) {
+  async function handleReact(projectId: string, emoji: string) {
     if (reactingIds.has(projectId)) return;
     const supabase = getBrowserSupabaseClient();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return;
+
+    const isToggleOff = project.reactedEmojis.includes(emoji);
+
+    // Optimistic update
     setReactingIds((s) => new Set(s).add(projectId));
     setProjects((prev) =>
-      prev.map((p) =>
-        p.id === projectId
-          ? { ...p, reactionCount: p.hasReacted ? p.reactionCount - 1 : p.reactionCount + 1, hasReacted: !p.hasReacted }
-          : p
-      )
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+        if (isToggleOff) {
+          const updatedEmojis = p.reactedEmojis.filter((e) => e !== emoji);
+          return {
+            ...p,
+            reactions: p.reactions
+              .map((r) => r.emoji === emoji ? { ...r, count: r.count - 1, hasReacted: false } : r)
+              .filter((r) => r.count > 0),
+            reactionCount: p.reactionCount - 1,
+            hasReacted: updatedEmojis.length > 0,
+            reactedEmojis: updatedEmojis,
+          };
+        }
+        // Add new emoji reaction
+        const existing = p.reactions.find((r) => r.emoji === emoji);
+        return {
+          ...p,
+          reactions: existing
+            ? p.reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count + 1, hasReacted: true } : r)
+            : [...p.reactions, { emoji, count: 1, hasReacted: true }],
+          reactionCount: p.reactionCount + 1,
+          hasReacted: true,
+          reactedEmojis: [...p.reactedEmojis, emoji],
+        };
+      })
     );
 
     try {
-      const res = await fetch('/api/reactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ projectId }),
-      });
-      if (!res.ok && res.status !== 409) {
-        setProjects((prev) =>
-          prev.map((p) =>
-            p.id === projectId
-              ? { ...p, reactionCount: p.hasReacted ? p.reactionCount - 1 : p.reactionCount + 1, hasReacted: !p.hasReacted }
-              : p
-          )
-        );
+      if (isToggleOff) {
+        await fetch(`/api/reactions?projectId=${encodeURIComponent(projectId)}&emoji=${encodeURIComponent(emoji)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+      } else {
+        await fetch('/api/reactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ projectId, reactionType: emoji }),
+        });
       }
     } catch {
-      setProjects((prev) =>
-        prev.map((p) =>
-          p.id === projectId
-            ? { ...p, reactionCount: p.hasReacted ? p.reactionCount - 1 : p.reactionCount + 1, hasReacted: !p.hasReacted }
-            : p
-        )
-      );
+      // Revert on network failure
+      setProjects((prev) => prev.map((p) => p.id === projectId ? project : p));
     } finally {
       setReactingIds((s) => { const next = new Set(s); next.delete(projectId); return next; });
     }
@@ -207,28 +226,29 @@ export function ShowcaseGrid({ initialProjects }: ShowcaseGridProps) {
           </p>
         </div>
       ) : (
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            gap: '20px',
-          }}
-        >
+        <div className="masonry-grid">
           {projects.map((project) => (
-            <div key={project.id} style={{ flex: '1 1 300px', maxWidth: '350px', width: '100%' }}>
-              <ProjectCard
-                key={project.id}
-                project={currentUserId ? project : { ...project, hasReacted: false }}
-                onReact={handleReact}
-                reactPending={reactingIds.has(project.id)}
-                currentUserId={currentUserId}
-                onEdit={handleEditProject}
-              />
-            </div>
+            <ProjectCard
+              key={project.id}
+              project={currentUserId ? project : { ...project, hasReacted: false, reactedEmojis: [] }}
+              onReact={handleReact}
+              reactPending={reactingIds.has(project.id)}
+              currentUserId={currentUserId}
+              onEdit={handleEditProject}
+              onClick={() => setSelectedProject(project)}
+            />
           ))}
         </div>
       )}
+
+      <ProjectSidebar
+        project={selectedProject ? (projects.find((p) => p.id === selectedProject.id) ?? selectedProject) : null}
+        currentUserId={currentUserId}
+        onClose={() => setSelectedProject(null)}
+        onReact={handleReact}
+        reactPending={selectedProject ? reactingIds.has(selectedProject.id) : false}
+        onEdit={handleEditProject}
+      />
 
       <SubmitProjectModal
         isOpen={modalOpen}

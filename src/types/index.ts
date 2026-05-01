@@ -27,12 +27,21 @@ export interface Project {
   updatedAt: string; // ISO 8601
 }
 
+export interface EmojiReaction {
+  emoji: string;
+  count: number;
+  hasReacted: boolean; // whether the current user reacted with this emoji
+}
+
 export interface ProjectWithAuthor extends Project {
   author: {
     username: string;
+    avatarUrl?: string;
   };
-  reactionCount: number;
-  hasReacted: boolean; // For current user
+  reactions: EmojiReaction[];
+  reactionCount: number; // total across all emojis
+  hasReacted: boolean; // any emoji by current user
+  reactedEmojis: string[]; // all emojis the current user has reacted with
 }
 
 export interface Reaction {

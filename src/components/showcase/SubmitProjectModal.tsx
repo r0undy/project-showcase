@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { ProjectForm } from './ProjectForm';
 import type { ProjectWithAuthor } from '@/types';
@@ -43,14 +44,14 @@ export function SubmitProjectModal({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 50,
+        zIndex: 100,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -63,6 +64,7 @@ export function SubmitProjectModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        className="hide-scrollbar"
         style={{
           width: '100%',
           maxWidth: '520px',
@@ -155,6 +157,7 @@ export function SubmitProjectModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
