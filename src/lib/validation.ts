@@ -36,6 +36,15 @@ export function isValidUrl(input: unknown): input is string {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Public-named aliases (Task 14 spec: validateUsername / validateRequired / validateUrl).
+// Keep these alongside the type-guard predicates so call sites can use whichever
+// reads better in context.
+// ---------------------------------------------------------------------------
+export const validateUsername = isValidUsername;
+export const validateRequired = isNonEmptyString;
+export const validateUrl = isValidUrl;
+
 /**
  * Validate the user-info form (Step 2).
  * Returns an empty object if everything is valid.

@@ -78,7 +78,26 @@ graph TB
 
 **Note 2 — MagicUI installation**: MagicUI is not a single npm package. Components are pulled per-need from `https://magicui.design/r/<name>.json` via the shadcn CLI (`npx shadcn@latest add <url>`). The project ran `npx shadcn@latest init --defaults` to scaffold `components.json`, `src/lib/utils.ts`, and the shadcn `Button`. The first verification component installed was `blur-fade` (used later for staggered card animations in Req 16.4). This setup also brings shadcn/ui base components, which can be used alongside MagicUI for non-animated UI pieces.
 
-**Note 3 — Tailwind v4 theming**: With Tailwind v4, design tokens live in CSS via `@theme inline` in `src/app/globals.css`, not in `tailwind.config.ts`'s `extend.colors`. The Linear.app palette (`#5E6AD2` primary, `#00D4FF` accent, `#FF3B30` destructive, etc.) is mapped onto the shadcn variable set so that both shadcn and MagicUI components inherit the project's aesthetic.
+**Note 3 — Tailwind v4 theming**: With Tailwind v4, design tokens live in CSS via `@theme inline` in `src/app/globals.css`, not in `tailwind.config.ts`'s `extend.colors`. The active palette is the cosmic theme (see Note 4); the JS config block is dead code and pending removal.
+
+**Note 4 — Theme: Cosmic ("From Vibe to Live")**: On 2026-05-01 the original Linear.app aesthetic was replaced with a dark cosmic theme matching the Figma design (`https://www.figma.com/design/KQ5EAw4koMfow6jzJCHdDQ/AWS--WEBDEV-Portfolio?node-id=16-6`) and the event poster. Dark-by-default. Token mapping in `src/app/globals.css`:
+
+| Token | Hex | Source |
+|---|---|---|
+| `--background` | `#0a0518` | Near-black with purple tint |
+| `--foreground` | `#f5f3ff` | Off-white, violet-tinted |
+| `--card` | `#1a0b2e` | Figma card base |
+| `--secondary` | `#2c1250` | Figma elevated card |
+| `--primary` | `#a855f7` | Vibrant violet (CTA) |
+| `--accent` | `#ec4899` | Magenta (poster glow) |
+| `--muted-foreground` | `#b6a8d8` | Purple-tinted gray |
+| `--border` | `#3b2069` | Subtle purple |
+| `--ring` | `#c084fc` | Lighter violet (focus) |
+| `--glow-magenta` | `#ff45c8` | Decorative-only |
+| `--glow-violet` | `#9333ea` | Decorative-only |
+| `--glow-deep` | `#4c1d95` | Decorative-only |
+
+Decorative utilities live in the same file: `.cosmic-bg` (radial-gradient base + corner glows via pseudo-elements), `.cosmic-stars` (CSS-generated starfield), `.cosmic-planet` + `.cosmic-float` (radial-gradient circles with optional floating animation). All decorations are pure CSS — no image assets — so they survive any future asset-pipeline changes and add zero network cost.
  
 ### Deployment Architecture
  

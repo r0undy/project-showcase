@@ -4,32 +4,40 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* AWS Community Showcase - Linear.app-inspired Design System */
+/* AWS Community Showcase — Cosmic / "From Vibe to Live" theme.
+ * Dark-by-default. Deep purple base + magenta accent, mirroring the Figma
+ * design system (#1a0b2e cards, #7127ba purple) and the event poster's
+ * pink-magenta glow. See aws-community-showcase/design.md for the rationale. */
 
 :root {
   /* Typography */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
 
-  /* Linear.app-inspired palette mapped onto shadcn tokens */
-  --background: #ffffff;
-  --foreground: #171717;
-  --card: #ffffff;
-  --card-foreground: #171717;
-  --popover: #ffffff;
-  --popover-foreground: #171717;
-  --primary: #5E6AD2;
+  /* Cosmic palette mapped onto shadcn tokens. */
+  --background: #0a0518;          /* near-black, slight purple tint */
+  --foreground: #f5f3ff;          /* off-white with violet tint */
+  --card: #1a0b2e;                /* deep purple — Figma card base */
+  --card-foreground: #f5f3ff;
+  --popover: #1a0b2e;
+  --popover-foreground: #f5f3ff;
+  --primary: #a855f7;             /* vibrant violet — CTA */
   --primary-foreground: #ffffff;
-  --secondary: #F4F5F8;
-  --secondary-foreground: #171717;
-  --muted: #F4F5F8;
-  --muted-foreground: #6B7280;
-  --accent: #00D4FF;
-  --accent-foreground: #0A0A0A;
-  --destructive: #FF3B30;
-  --border: #E5E7EB;
-  --input: #E5E7EB;
-  --ring: #5E6AD2;
+  --secondary: #2c1250;           /* elevated card — Figma deep purple */
+  --secondary-foreground: #ccd6f6;
+  --muted: #1f1037;
+  --muted-foreground: #b6a8d8;    /* purple-tinted gray */
+  --accent: #ec4899;              /* magenta — poster glow */
+  --accent-foreground: #ffffff;
+  --destructive: #ff4d6d;
+  --border: #3b2069;              /* subtle purple border */
+  --input: #2a1547;
+  --ring: #c084fc;                /* lighter violet for focus rings */
+
+  /* Cosmic-specific helpers (used by the landing decorations) */
+  --glow-magenta: #ff45c8;
+  --glow-violet: #9333ea;
+  --glow-deep: #4c1d95;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -75,8 +83,197 @@ body {
 
 /* Focus styles for accessibility */
 :focus-visible {
-  outline: 2px solid #5E6AD2;
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+/* Cosmic background utility — radial glows on the deep-purple base.
+ * Apply to a containing element; pseudo-elements draw the glows so the
+ * actual children get a stacking context above them. */
+.cosmic-bg {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in oklab, var(--glow-magenta) 35%, transparent), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 0% 100%, color-mix(in oklab, var(--glow-violet) 30%, transparent), transparent 55%),
+    radial-gradient(ellipse 50% 50% at 100% 80%, color-mix(in oklab, var(--glow-magenta) 22%, transparent), transparent 60%);
+  overflow: hidden;
+}
+
+.cosmic-bg::before,
+.cosmic-bg::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.55;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.cosmic-bg::before {
+  width: 480px;
+  height: 480px;
+  top: -120px;
+  right: -80px;
+  background: radial-gradient(circle at 30% 30%, var(--glow-magenta), transparent 70%);
+}
+
+.cosmic-bg::after {
+  width: 540px;
+  height: 540px;
+  bottom: -160px;
+  left: -120px;
+  background: radial-gradient(circle at 70% 70%, var(--glow-deep), transparent 70%);
+}
+
+/* Subtle starfield over the cosmic background. Pure CSS — no asset. */
+.cosmic-stars {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.6), transparent 50%),
+    radial-gradient(1px 1px at 28% 72%, rgba(255,255,255,0.45), transparent 50%),
+    radial-gradient(1.5px 1.5px at 64% 24%, rgba(255,255,255,0.7), transparent 50%),
+    radial-gradient(1px 1px at 82% 58%, rgba(255,255,255,0.5), transparent 50%),
+    radial-gradient(1px 1px at 44% 92%, rgba(255,255,255,0.4), transparent 50%),
+    radial-gradient(1.5px 1.5px at 92% 12%, rgba(255,255,255,0.65), transparent 50%);
+}
+
+/* Cosmic horizon — a giant ellipse mostly hidden below the viewport so only
+ * its top arc is visible. Reads as a distant planet's surface curving away
+ * underneath the user. The magenta/violet glow on the rim makes the
+ * horizon-edge feel atmospheric.
+ *
+ * Implementation: 240vw wide × 80vh tall ellipse, anchored center-bottom and
+ * pushed 50vh below the viewport (so the visible arc tops out at ~30vh from
+ * the bottom of the screen). Pure CSS — no images. */
+.cosmic-horizon {
+  position: absolute;
+  left: 50%;
+  bottom: -70vh;
+  transform: translateX(-50%);
+  /* Width-to-height ratio drives how pronounced the curve looks.
+   * 150vw × 110vh is much closer to 1:1 than the previous 240vw × 80vh,
+   * so the horizon arc reads as a planet rather than a distant flat line.
+   * About 40vh of arc is visible above the bottom of the viewport. */
+  width: 150vw;
+  height: 110vh;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in oklab, var(--background) 40%, var(--card)) 0%, var(--background) 60%),
+    var(--background);
+  box-shadow:
+    inset 0 2px 0 -1px color-mix(in oklab, var(--glow-magenta) 50%, transparent),
+    0 -2px 24px color-mix(in oklab, var(--glow-magenta) 35%, transparent),
+    0 -16px 80px color-mix(in oklab, var(--glow-violet) 55%, transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Floating "planet" decoration — used by the landing hero. Responsive size
+ * helpers shrink the planets on mobile so they don't dominate the small viewport. */
+.cosmic-planet {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--glow-magenta) 70%, white 0%), color-mix(in oklab, var(--glow-deep) 50%, black 0%) 70%, transparent 100%);
+  filter: blur(0.5px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.cosmic-planet-sm { width: 40px;  height: 40px; }
+.cosmic-planet-md { width: 70px;  height: 70px; }
+.cosmic-planet-lg { width: 110px; height: 110px; }
+.cosmic-planet-xl { width: 150px; height: 150px; }
+@media (min-width: 640px) {
+  .cosmic-planet-sm { width: 70px;  height: 70px; }
+  .cosmic-planet-md { width: 130px; height: 130px; }
+  .cosmic-planet-lg { width: 200px; height: 200px; }
+  .cosmic-planet-xl { width: 240px; height: 240px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cosmic-float {
+    animation: cosmic-float 9s ease-in-out infinite;
+  }
+  .cosmic-glow-pulse {
+    animation: cosmic-glow-pulse 4s ease-in-out infinite;
+  }
+}
+@keyframes cosmic-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes cosmic-glow-pulse {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 18px color-mix(in oklab, var(--glow-magenta) 50%, transparent)); }
+  50%      { opacity: 1; filter: drop-shadow(0 0 32px color-mix(in oklab, var(--glow-magenta) 80%, transparent)); }
+}
+
+/* Shooting stars — the head is a small bright dot with a magenta halo, and
+ * a gradient line extending to the head's right is the trail. The whole
+ * element is rotated 315° (= -45°) and translated along its rotated X axis
+ * via translateX(-Npx). After the rotation, "negative X" points to the
+ * lower-left, so the dot flies down-left and the trail naturally follows
+ * to the upper-right (behind the motion). Technique adapted from a common
+ * CSS shooting-stars pattern; tuned to our magenta cosmic palette.
+ *
+ * Position each instance with `top` + `right` (NOT left) in inline styles
+ * so they originate from the upper-right of the viewport. The animation's
+ * delay/duration sets cadence per instance. */
+.cosmic-shooting-star {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.08),
+    0 0 0 6px rgba(255, 255, 255, 0.04),
+    0 0 14px color-mix(in oklab, var(--glow-magenta) 90%, white 0%),
+    0 0 30px var(--glow-magenta);
+  pointer-events: none;
+  opacity: 0; /* hidden between flights */
+}
+
+/* Trail — gradient line extending in the element's local +X direction. After
+ * the 315° rotation this lands behind the head (upper-right), so the trail
+ * follows the motion correctly. */
+.cosmic-shooting-star::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 220px;
+  height: 1.5px;
+  transform: translateY(-50%);
+  background: linear-gradient(
+    to right,
+    color-mix(in oklab, var(--glow-magenta) 80%, white 0%),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cosmic-shooting-star {
+    animation: cosmic-shoot 3s linear infinite;
+  }
+}
+
+@keyframes cosmic-shoot {
+  0%   { transform: rotate(315deg) translateX(0);       opacity: 1; }
+  70%  {                                                 opacity: 1; }
+  100% { transform: rotate(315deg) translateX(-1200px); opacity: 0; }
+}
+
+/* Custom cursor — see src/components/cursor/CustomCursor.tsx */
+@media (pointer: fine) {
+  html.cosmic-cursor,
+  html.cosmic-cursor * {
+    cursor: none !important;
+  }
 }
 
 /* Remove default button styles */
@@ -93,7 +290,8 @@ img {
 }
 
 @theme inline {
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-display, var(--font-sans));
+  --font-display: var(--font-display);
   --font-sans: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
