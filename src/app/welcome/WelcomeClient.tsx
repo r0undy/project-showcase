@@ -14,7 +14,14 @@ import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 
 export function WelcomeClient() {
   return (
-    <main className="cosmic-bg relative flex min-h-screen flex-col items-center px-4 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-24">
+    <main
+      style={{
+        paddingInline: 'clamp(1rem, 3vw, 1.5rem)',
+        paddingTop: 'clamp(3.5rem, 6vw, 5rem)',
+        paddingBottom: 'clamp(2rem, 4vw, 4rem)',
+      }}
+      className="cosmic-bg relative flex min-h-screen flex-col items-center"
+    >
       <div className="cosmic-stars" aria-hidden="true" />
 
       <span
@@ -30,7 +37,12 @@ export function WelcomeClient() {
 
       <Link
         href="/"
-        className="absolute left-4 top-4 z-20 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 px-3 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:left-6 sm:top-6"
+        style={{
+          paddingInline: '0.875rem',
+          paddingBlock: '0.5rem',
+          gap: '0.5rem',
+        }}
+        className="absolute left-4 top-4 z-20 inline-flex items-center rounded-full border border-border/60 bg-card/40 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:left-6 sm:top-6"
       >
         <span aria-hidden="true">←</span>
         Back to home
@@ -40,7 +52,15 @@ export function WelcomeClient() {
         FROM VIBE TO LIVE
       </span>
 
-      <div className="relative z-10 flex w-full flex-1 flex-col items-center justify-center">
+      {/* `flex-1` + `min-h-0` lets the OnboardingFlow inside take all the
+       * remaining vertical space, which it then divides between the step
+       * viewport (flex: 1) and the StepNavigation (flex-shrink: 0). End
+       * result: the stepper stays pinned at the bottom of this region
+       * regardless of step content height. */}
+      <div
+        style={{ minHeight: 0, flex: 1 }}
+        className="relative z-10 flex w-full flex-col items-center"
+      >
         <OnboardingFlow />
       </div>
     </main>

@@ -108,7 +108,7 @@ describe('POST /api/users — integration', () => {
   );
 
   it(
-    'returns 400 when awsccId is missing',
+    'allows awsccId to be omitted',
     async () => {
       const { accessToken, authUserId } = await signedInClient();
       try {
@@ -118,9 +118,18 @@ describe('POST /api/users — integration', () => {
           body: { username: uniqueUsername('it') },
         });
         const res = await POST(req);
-        expect(res.status).toBe(400);
-        const body = (await res.json()) as ErrorResponse;
-        expect(body.details).toMatchObject({ awsccId: expect.any(String) });
+        expect(res.status).toBe(201);
+        const body = (await res.json()) as CreateUserResponse;
+        expect(body.user.awsccId).toBeUndefined();
+
+        const admin = adminTestClient();
+        const { data, error } = await admin
+          .from('users')
+          .select('*')
+          .eq('id', authUserId)
+          .single();
+        expect(error).toBeNull();
+        expect(data?.awscc_id).toBeNull();
       } finally {
         await deleteTestUser(authUserId);
       }

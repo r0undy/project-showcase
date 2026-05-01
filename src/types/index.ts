@@ -10,7 +10,8 @@
 export interface User {
   id: string; // UUID — equals auth.uid() for users created via onboarding (anonymous sign-in)
   username: string;
-  awsccId: string;
+  awsccId?: string;
+  avatarUrl?: string;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
 }
@@ -57,7 +58,8 @@ export interface OnboardingProgress {
 // POST /api/users
 export interface CreateUserRequest {
   username: string;
-  awsccId: string;
+  awsccId?: string;
+  avatarUrl?: string;
 }
 
 export interface CreateUserResponse {
@@ -148,7 +150,8 @@ export interface OnboardingState {
   currentStep: number; // 1-7
   formData: {
     username: string;
-    awsccId: string;
+    awsccId?: string;
+    avatarUrl?: string;
   };
   completedSteps: Set<number>;
 }
@@ -171,12 +174,14 @@ export interface UserInfoFormProps {
 
 export interface UserFormData {
   username: string;
-  awsccId: string;
+  awsccId?: string;
+  avatarUrl?: string;
 }
 
 export interface ValidationErrors {
   username?: string;
   awsccId?: string;
+  avatarUrl?: string;
 }
 
 // Setup Step

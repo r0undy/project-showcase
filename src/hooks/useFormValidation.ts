@@ -15,7 +15,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 export type FormErrors<T> = Partial<Record<keyof T, string>>;
 
-export interface UseFormValidationResult<T extends Record<string, unknown>> {
+export interface UseFormValidationResult<T extends object> {
   values: T;
   errors: FormErrors<T>;
   /** Errors visible to the UI (only for fields the user has touched, or after submit). */
@@ -32,7 +32,7 @@ export interface UseFormValidationResult<T extends Record<string, unknown>> {
   reset: (next?: Partial<T>) => void;
 }
 
-export function useFormValidation<T extends Record<string, unknown>>(
+export function useFormValidation<T extends object>(
   initialValues: T,
   validate: (values: T) => FormErrors<T>
 ): UseFormValidationResult<T> {

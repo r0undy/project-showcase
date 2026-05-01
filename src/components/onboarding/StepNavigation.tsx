@@ -16,6 +16,7 @@
  */
 
 import { AnimatePresence, motion } from 'motion/react';
+import type { ReactNode } from 'react';
 
 interface StepNavigationProps {
   currentStep: number;
@@ -29,6 +30,11 @@ interface StepNavigationProps {
   completedSteps: ReadonlySet<number>;
   /** Override label on the Next button (e.g. "Continue", "Submit", "Finish"). */
   nextLabel?: string;
+  /** Hide the Next button entirely (e.g. on Step 2 where the form provides
+   *  its own submit button). The Back button + indicator still render. */
+  hideNext?: boolean;
+  /** Optional custom primary action (e.g. submit button). */
+  primaryAction?: ReactNode;
 }
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
@@ -42,6 +48,8 @@ export function StepNavigation({
   canProceed,
   completedSteps,
   nextLabel,
+  hideNext = false,
+  primaryAction,
 }: StepNavigationProps) {
   const isFirst = currentStep <= 1;
   const isLast = currentStep >= totalSteps;
@@ -124,25 +132,27 @@ export function StepNavigation({
           Back
         </motion.button>
 
-        <motion.button
-          type="button"
-          onClick={onNext}
-          disabled={!canProceed || isLast}
-          whileHover={canProceed && !isLast ? { scale: 1.03 } : undefined}
-          whileTap={canProceed && !isLast ? { scale: 0.97 } : undefined}
-          transition={{ type: 'spring', stiffness: 380, damping: 22 }}
-          style={{
-            paddingInline: '2rem',
-            height: '2.5rem',
-            boxShadow:
-              canProceed && !isLast
-                ? '0 0 24px -4px color-mix(in oklab, var(--glow-magenta) 60%, transparent)'
-                : undefined,
-          }}
-          className="inline-flex items-center rounded-full bg-linear-to-r from-primary to-accent text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40"
-        >
-          {nextLabel ?? (isLast ? 'Finish' : 'Continue')}
-        </motion.button>
+        {primaryAction ?? (!hideNext && (
+          <motion.button
+            type="button"
+            onClick={onNext}
+            disabled={!canProceed || isLast}
+            whileHover={canProceed && !isLast ? { scale: 1.03 } : undefined}
+            whileTap={canProceed && !isLast ? { scale: 0.97 } : undefined}
+            transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+            style={{
+              paddingInline: '2rem',
+              height: '2.5rem',
+              boxShadow:
+                canProceed && !isLast
+                  ? '0 0 24px -4px color-mix(in oklab, var(--glow-magenta) 60%, transparent)'
+                  : undefined,
+            }}
+            className="inline-flex items-center rounded-full bg-linear-to-r from-primary to-accent text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40"
+          >
+            {nextLabel ?? (isLast ? 'Finish' : 'Continue')}
+          </motion.button>
+        ))}
       </div>
     </motion.div>
   );

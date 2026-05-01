@@ -11,36 +11,45 @@
  * call without confusing partial responses for unauthenticated callers.
  */
 
-import { NextResponse } from 'next/server';
-import { requireAuth, errorResponse } from '@/lib/auth';
-import type { GetUserResponse, OnboardingProgress, User } from '@/types';
+import { NextResponse } from "next/server";
+import { requireAuth, errorResponse } from "@/lib/auth";
+import type { GetUserResponse, OnboardingProgress, User } from "@/types";
 
 export async function GET(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   const auth = await requireAuth(request);
-  if ('response' in auth) return auth.response;
+  if ("response" in auth) return auth.response;
   const { supabase } = auth.session;
 
   const { id } = await context.params;
 
-  const [{ data: userRow, error: userErr }, { data: progressRows, error: progErr }] =
-    await Promise.all([
-      supabase.from('users').select('*').eq('id', id).maybeSingle(),
-      supabase.from('onboarding_progress').select('*').eq('user_id', id),
-    ]);
+  const [
+    { data: userRow, error: userErr },
+    { data: progressRows, error: progErr },
+  ] = await Promise.all([
+    supabase.from("users").select("*").eq("id", id).maybeSingle(),
+    supabase.from("onboarding_progress").select("*").eq("user_id", id),
+  ]);
 
   if (userErr) {
-    return errorResponse(500, 'INTERNAL_ERROR', 'Failed to fetch user.', { code: userErr.code });
+    return errorResponse(500, "INTERNAL_ERROR", "Failed to fetch user.", {
+      code: userErr.code,
+    });
   }
   if (!userRow) {
-    return errorResponse(404, 'NOT_FOUND', `User ${id} not found.`);
+    return errorResponse(404, "NOT_FOUND", `User ${id} not found.`);
   }
   if (progErr) {
-    return errorResponse(500, 'INTERNAL_ERROR', 'Failed to fetch onboarding progress.', {
-      code: progErr.code,
-    });
+    return errorResponse(
+      500,
+      "INTERNAL_ERROR",
+      "Failed to fetch onboarding progress.",
+      {
+        code: progErr.code,
+      },
+    );
   }
 
   const body: GetUserResponse = {
@@ -53,14 +62,16 @@ export async function GET(
 function rowToUser(row: {
   id: string;
   username: string;
-  awscc_id: string;
+  awscc_id: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }): User {
   return {
     id: row.id,
     username: row.username,
-    awsccId: row.awscc_id,
+    awsccId: row.awscc_id ?? undefined,
+    avatarUrl: row.avatar_url ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

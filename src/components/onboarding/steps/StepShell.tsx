@@ -42,7 +42,10 @@ const item = {
 
 export function StepShell({ eyebrow, title, lede, children }: StepShellProps) {
   return (
-    <div className="flex flex-col gap-5 text-left">
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.5vw, 1rem)' }}
+      className="text-left"
+    >
       {eyebrow && (
         <motion.span
           variants={item}
@@ -53,20 +56,22 @@ export function StepShell({ eyebrow, title, lede, children }: StepShellProps) {
       )}
       <motion.h2
         variants={item}
-        className="font-display text-3xl uppercase leading-[1.05] tracking-[0.02em] text-foreground sm:text-4xl md:text-5xl"
+        style={{ fontSize: 'clamp(1.25rem, 3.5vw + 0.25rem, 2.25rem)', lineHeight: 1.05 }}
+        className="font-display uppercase tracking-[0.02em] text-foreground"
       >
         {title}
       </motion.h2>
       {lede && (
         <motion.p
           variants={item}
-          className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base"
+          style={{ fontSize: 'clamp(0.8125rem, 1.2vw + 0.5rem, 1rem)', lineHeight: 1.55 }}
+          className="max-w-prose text-muted-foreground"
         >
           {lede}
         </motion.p>
       )}
       {children && (
-        <motion.div variants={item} className="mt-2">
+        <motion.div variants={item} style={{ marginTop: '0.25rem' }}>
           {children}
         </motion.div>
       )}

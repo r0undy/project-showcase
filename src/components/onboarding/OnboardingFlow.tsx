@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * OnboardingFlow — the 7-step onboarding flow rendered directly on the page
@@ -17,17 +17,19 @@
  *     [0.4, 0, 1, 1] (ease-in) for exits.
  */
 
-import { AnimatePresence, motion, type Variants } from 'motion/react';
-import { useId, useMemo, useState, type ComponentType } from 'react';
-import { useOnboardingState } from '@/hooks/useOnboardingState';
-import { StepNavigation } from './StepNavigation';
-import { Step1 } from './steps/Step1';
-import { Step2 } from './steps/Step2';
-import { Step3 } from './steps/Step3';
-import { Step4 } from './steps/Step4';
-import { Step5 } from './steps/Step5';
-import { Step6 } from './steps/Step6';
-import { Step7 } from './steps/Step7';
+import { AnimatePresence, motion, type Variants } from "motion/react";
+import { useId, useMemo, useState, type ComponentType } from "react";
+import { useOnboardingState } from "@/hooks/useOnboardingState";
+import { OnboardingProvider } from "@/lib/onboarding-context";
+import { StepNavigation } from "./StepNavigation";
+import { USER_INFO_FORM_ID } from "./UserInfoForm";
+import { Step1 } from "./steps/Step1";
+import { Step2 } from "./steps/Step2";
+import { Step3 } from "./steps/Step3";
+import { Step4 } from "./steps/Step4";
+import { Step5 } from "./steps/Step5";
+import { Step6 } from "./steps/Step6";
+import { Step7 } from "./steps/Step7";
 
 const STEP_COMPONENTS: Record<number, ComponentType> = {
   1: Step1,
@@ -47,12 +49,12 @@ const stepContainer: Variants = {
   enter: (direction: 1 | -1) => ({
     x: 32 * direction,
     opacity: 0,
-    filter: 'blur(8px)',
+    filter: "blur(8px)",
   }),
   center: {
     x: 0,
     opacity: 1,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: {
       duration: 0.55,
       ease: [0.16, 1, 0.3, 1] as const,
@@ -63,24 +65,28 @@ const stepContainer: Variants = {
   exit: (direction: 1 | -1) => ({
     x: -32 * direction,
     opacity: 0,
-    filter: 'blur(8px)',
+    filter: "blur(8px)",
     transition: { duration: 0.28, ease: [0.4, 0, 1, 1] as const },
   }),
 };
 
 export function OnboardingFlow() {
   const onboarding = useOnboardingState();
-  const { state, totalSteps, next, back, goToStep } = onboarding;
+  const { state, totalSteps, next, back, goToStep, setField, markCompleted } =
+    onboarding;
   const headingId = useId();
   const [direction, setDirection] = useState<1 | -1>(1);
+  const [isFormSubmitting, setFormSubmitting] = useState(false);
 
-  // For now any step can advance; specific steps (e.g. Step 2's form)
-  // override this via their own validation in later tasks.
-  const canProceed = true;
+  // Step 2 owns its own submit button (the UserInfoForm); the StepNavigation
+  // hides Continue there to avoid two competing primary actions. Other steps
+  // can always advance via Continue.
+  const isFormStep = state.currentStep === 2;
+  const canProceed = !isFormStep;
 
   const StepComponent = useMemo(
     () => STEP_COMPONENTS[state.currentStep] ?? Step1,
-    [state.currentStep]
+    [state.currentStep],
   );
 
   const handleNext = () => {
@@ -97,43 +103,126 @@ export function OnboardingFlow() {
   };
 
   return (
-    <section
-      role="region"
-      aria-labelledby={headingId}
-      className="flex w-full max-w-2xl flex-col gap-12"
+    <OnboardingProvider
+      value={{
+        state,
+        totalSteps,
+        next,
+        back,
+        goToStep,
+        setField,
+        markCompleted,
+        isFormSubmitting,
+        setFormSubmitting,
+      }}
     >
-      <span id={headingId} className="sr-only">
-        Onboarding — step {state.currentStep} of {totalSteps}
-      </span>
+      <section
+        role="region"
+        aria-labelledby={headingId}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          maxWidth: "46rem",
+          flex: 1, // take all available vertical space from parent
+          minHeight: 0, // allow inner viewport to shrink and scroll
+        }}
+      >
+        <span id={headingId} className="sr-only">
+          Onboarding — step {state.currentStep} of {totalSteps}
+        </span>
 
-      {/* Step viewport — fixed min-height keeps the navigation from jumping
-       * as content height varies between steps. `overflow-hidden` clips the
-       * incoming/outgoing slide so the page doesn't get a horizontal scroll
-       * mid-transition. */}
-      <div className="relative min-h-72 overflow-hidden">
-        <AnimatePresence mode="wait" initial={false} custom={direction}>
-          <motion.div
-            key={state.currentStep}
-            custom={direction}
-            variants={stepContainer}
-            initial="enter"
-            animate="center"
-            exit="exit"
-          >
-            <StepComponent />
-          </motion.div>
-        </AnimatePresence>
-      </div>
+        {/* Step viewport. `flex: 1` makes it eat the available height so the
+         * StepNavigation below stays pinned at a constant vertical position
+         * (it doesn't get pushed down by tall steps or jump up on short steps).
+         * Internal vertical centering keeps short content from clinging to the
+         * top of the viewport. `overflow-y: auto` lets long content scroll
+         * inside the viewport instead of pushing the nav out of view.
+         * `overflow-x: hidden` clips the slide-in/out animation. */}
+        <div
+          className="hide-scrollbar"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            overflowX: "hidden",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "clamp(1.25rem, 3vw, 2rem)",
+            position: "relative",
+          }}
+        >
+          <AnimatePresence mode="wait" initial={false} custom={direction}>
+            <motion.div
+              key={state.currentStep}
+              custom={direction}
+              variants={stepContainer}
+              initial="enter"
+              animate="center"
+              exit="exit"
+            >
+              <StepComponent />
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-      <StepNavigation
-        currentStep={state.currentStep}
-        totalSteps={totalSteps}
-        onNext={handleNext}
-        onBack={handleBack}
-        onStepClick={handleStepClick}
-        canProceed={canProceed}
-        completedSteps={state.completedSteps}
-      />
-    </section>
+        {/* StepNavigation — never grows, never shrinks; always at the bottom of
+         * the section. */}
+        <div
+          style={{ flexShrink: 0, marginTop: "clamp(1.25rem, 2.5vw, 1.75rem)" }}
+        >
+          <StepNavigation
+            currentStep={state.currentStep}
+            totalSteps={totalSteps}
+            onNext={handleNext}
+            onBack={handleBack}
+            onStepClick={handleStepClick}
+            canProceed={canProceed}
+            completedSteps={state.completedSteps}
+            hideNext={isFormStep}
+            primaryAction={
+              isFormStep ? (
+                <motion.button
+                  type="submit"
+                  form={USER_INFO_FORM_ID}
+                  disabled={isFormSubmitting}
+                  whileHover={!isFormSubmitting ? { scale: 1.03 } : undefined}
+                  whileTap={!isFormSubmitting ? { scale: 0.97 } : undefined}
+                  transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                  style={{
+                    paddingInline: "2rem",
+                    height: "2.5rem",
+                    boxShadow:
+                      "0 0 24px -4px color-mix(in oklab, var(--glow-magenta) 60%, transparent)",
+                    opacity: isFormSubmitting ? 0.7 : 1,
+                    cursor: isFormSubmitting ? "wait" : "pointer",
+                  }}
+                  className="inline-flex items-center rounded-full bg-linear-to-r from-primary to-accent text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  {isFormSubmitting ? (
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: "0.875rem",
+                        height: "0.875rem",
+                        borderRadius: "50%",
+                        border:
+                          "2px solid color-mix(in oklab, var(--primary-foreground) 40%, transparent)",
+                        borderTopColor: "var(--primary-foreground)",
+                        animation: "cosmic-spin 0.7s linear infinite",
+                      }}
+                    />
+                  ) : null}
+                  {isFormSubmitting ? "Creating profile…" : "Create profile"}
+                </motion.button>
+              ) : undefined
+            }
+          />
+        </div>
+      </section>
+    </OnboardingProvider>
   );
 }

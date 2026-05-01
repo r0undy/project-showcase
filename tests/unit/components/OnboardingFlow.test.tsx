@@ -29,14 +29,37 @@ describe('<OnboardingFlow />', () => {
   it('Continue advances steps; the indicator updates each time', async () => {
     const user = userEvent.setup();
     render(<OnboardingFlow />);
-    // Each click is on "Continue" (the button label only flips to "Finish"
-    // once we've reached step 7, at which point the button is also disabled).
-    for (let target = 2; target <= 7; target++) {
+    // Step 1 → Step 2 via Continue.
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+    expect(await findStepIndicator(2)).toBeInTheDocument();
+
+    // Step 2 hides the Continue button (the form provides its own submit),
+    // so we jump past it via the indicator dot for step 3.
+    expect(screen.queryByRole('button', { name: /continue/i })).toBeNull();
+    const tabs = screen.getAllByRole('tab');
+    await user.click(tabs[2]); // step 3
+    expect(await findStepIndicator(3)).toBeInTheDocument();
+
+    // From step 3 onward, Continue is back. Walk through to step 7.
+    for (let target = 4; target <= 7; target++) {
       await user.click(screen.getByRole('button', { name: /continue/i }));
       expect(await findStepIndicator(target)).toBeInTheDocument();
     }
     // After reaching step 7 the button label is "Finish" and disabled.
     expect(screen.getByRole('button', { name: /finish/i })).toBeDisabled();
+  });
+
+  it('hides the Continue button on Step 2 (form provides its own submit)', async () => {
+    const user = userEvent.setup();
+    render(<OnboardingFlow />);
+    await user.click(screen.getByRole('button', { name: /continue/i }));
+    expect(await findStepIndicator(2)).toBeInTheDocument();
+    // The form's own primary CTA should be present (await for the AnimatePresence
+    // transition to mount it).
+    expect(
+      await screen.findByRole('button', { name: /create profile/i })
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continue/i })).toBeNull();
   });
 
   it('Back returns to the previous step', async () => {

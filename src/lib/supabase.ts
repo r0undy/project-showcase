@@ -13,7 +13,7 @@
  * Auth strategy: anonymous Supabase sign-in. See aws-community-showcase/design.md.
  */
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // ---------------------------------------------------------------------------
 // Env validation (URL + anon key are public; service role is server-only)
@@ -23,7 +23,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
-    'Missing Supabase environment variables. Please check your .env.local file.'
+    "Missing Supabase environment variables. Please check your .env.local file.",
   );
 }
 
@@ -63,7 +63,7 @@ export const supabase = getBrowserSupabaseClient();
  * call, so RLS policies see the correct `auth.uid()`.
  */
 export function createServerSupabaseClient(
-  accessToken?: string
+  accessToken?: string,
 ): SupabaseClient<Database> {
   return createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
     auth: {
@@ -84,7 +84,7 @@ export function createAdminSupabaseClient(): SupabaseClient<Database> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
     throw new Error(
-      'Missing SUPABASE_SERVICE_ROLE_KEY. This is required for server-side admin operations.'
+      "Missing SUPABASE_SERVICE_ROLE_KEY. This is required for server-side admin operations.",
     );
   }
   return createClient<Database>(supabaseUrl!, serviceRoleKey, {
@@ -113,21 +113,24 @@ export type Database = {
         Row: {
           id: string;
           username: string;
-          awscc_id: string;
+          awscc_id: string | null;
+          avatar_url: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           username: string;
-          awscc_id: string;
+          awscc_id?: string | null;
+          avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           username?: string;
-          awscc_id?: string;
+          awscc_id?: string | null;
+          avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -163,11 +166,11 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: 'projects_author_id_fkey';
-            columns: ['author_id'];
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          }
+            foreignKeyName: "projects_author_id_fkey";
+            columns: ["author_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
         ];
       };
       reactions: {
@@ -194,17 +197,17 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: 'reactions_user_id_fkey';
-            columns: ['user_id'];
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
+            foreignKeyName: "reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: 'reactions_project_id_fkey';
-            columns: ['project_id'];
-            referencedRelation: 'projects';
-            referencedColumns: ['id'];
-          }
+            foreignKeyName: "reactions_project_id_fkey";
+            columns: ["project_id"];
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
         ];
       };
       onboarding_progress: {
@@ -234,11 +237,11 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: 'onboarding_progress_user_id_fkey';
-            columns: ['user_id'];
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          }
+            foreignKeyName: "onboarding_progress_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
         ];
       };
     };
