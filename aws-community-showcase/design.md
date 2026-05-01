@@ -70,11 +70,15 @@ graph TB
 | Language | TypeScript | 5.0+ | Type-safe development |
 | Database | Supabase (PostgreSQL) | 2.0+ | Data persistence and auth |
 | Styling | Tailwind CSS | 4.0+ | Utility-first CSS framework |
-| UI Components | MagicUI | Latest | Pre-built animated components |
-| Animation | Framer Motion | Latest | Declarative animations |
+| UI Components | MagicUI (via shadcn CLI) + shadcn/ui | Latest | Pre-built animated components, generated into `src/components/ui/` |
+| Animation | Framer Motion / `motion` | Latest | Declarative animations (MagicUI components import from `motion/react`) |
 | Deployment | Vercel | Latest | Hosting and CI/CD |
 
-**Note**: Requirements mention Express.js (Req 20.2), but this design uses Next.js Route Handlers which provide equivalent REST API functionality with better integration and type safety. All Backend_API requirements (Req 10) are fulfilled by Route Handlers in the app/api directory.
+**Note 1 — Backend API**: Requirements mention Express.js (Req 20.2), but this design uses Next.js Route Handlers which provide equivalent REST API functionality with better integration and type safety. All Backend_API requirements (Req 10) are fulfilled by Route Handlers in the app/api directory.
+
+**Note 2 — MagicUI installation**: MagicUI is not a single npm package. Components are pulled per-need from `https://magicui.design/r/<name>.json` via the shadcn CLI (`npx shadcn@latest add <url>`). The project ran `npx shadcn@latest init --defaults` to scaffold `components.json`, `src/lib/utils.ts`, and the shadcn `Button`. The first verification component installed was `blur-fade` (used later for staggered card animations in Req 16.4). This setup also brings shadcn/ui base components, which can be used alongside MagicUI for non-animated UI pieces.
+
+**Note 3 — Tailwind v4 theming**: With Tailwind v4, design tokens live in CSS via `@theme inline` in `src/app/globals.css`, not in `tailwind.config.ts`'s `extend.colors`. The Linear.app palette (`#5E6AD2` primary, `#00D4FF` accent, `#FF3B30` destructive, etc.) is mapped onto the shadcn variable set so that both shadcn and MagicUI components inherit the project's aesthetic.
  
 ### Deployment Architecture
  
@@ -351,34 +355,38 @@ The application uses a hybrid state management approach:
  
 4. **Authentication State** (via Supabase client)
    - User session and authentication status
-   - Managed by Supabase Auth client
-   - Accessed via `useSupabaseClient()` hook
+   - Managed by Supabase Auth client (anonymous sign-in, see Authentication Flow above)
+   - Persisted in `localStorage` (Supabase JS client default with `persistSession: true`)
+   - Accessed via a custom `useAuth()` hook from the AuthProvider context (see Task 21.1)
  
 ### Authentication Flow
- 
+
+**Strategy: anonymous Supabase sign-in + localStorage persistence.** This is a one-time event, no passwords or recovery flow. Users get a Supabase `auth.users` row via `signInAnonymously()` so RLS works (`auth.uid()` is populated for every request), and `public.users.id` is set equal to `auth.uid()` so the existing RLS policy `WITH CHECK (auth.uid() = id)` passes. Session persists in `localStorage` (Supabase JS client default when `persistSession: true`). If the browser clears localStorage, the user effectively becomes a new identity — acceptable for a finite event window.
+
 ```mermaid
 sequenceDiagram
     participant User
-    participant Landing
     participant Modal
-    participant API
-    participant Supabase
- 
-    User->>Landing: Click "Get Started"
-    Landing->>Modal: Open OnboardingModal
-    Modal->>User: Show Step 1 (Welcome)
-    User->>Modal: Navigate to Step 2
-    Modal->>User: Show UserInfoForm
+    participant SupabaseAuth as Supabase Auth (client)
+    participant API as Next.js Route Handler
+    participant DB as public.users
+
+    User->>Modal: Click "Get Started" → reaches Step 2
     User->>Modal: Submit username + AWSCC ID
-    Modal->>API: POST /api/users
-    API->>Supabase: Create user record
-    Supabase->>API: Return user ID
-    API->>Supabase: Create auth session
-    Supabase->>API: Return session token
-    API->>Modal: Return user ID + session
-    Modal->>Modal: Store session
+    Modal->>SupabaseAuth: signInAnonymously()
+    SupabaseAuth-->>Modal: { session, auth.uid() } (stored in localStorage)
+    Modal->>API: POST /api/users { username, awsccId } + Authorization header
+    API->>API: Validate session, extract auth.uid()
+    API->>DB: INSERT INTO users (id, username, awscc_id) VALUES (auth.uid(), …)
+    Note over DB: RLS check: auth.uid() = id ✓
+    DB-->>API: user row
+    API-->>Modal: { user }
     Modal->>User: Navigate to Step 3
 ```
+
+**Important schema note:** the migration default `users.id UUID PRIMARY KEY DEFAULT gen_random_uuid()` should NOT be relied on for the onboarding insert path. The Route Handler MUST explicitly set `id` to the authenticated `auth.uid()`, otherwise the RLS policy in `005_enable_rls_and_policies.sql` will reject the insert. (The default is fine for service-role admin inserts.)
+
+**Session loss handling (returning user):** If a returning user has lost their localStorage (different browser, clear cache, etc.), they go through onboarding again and get a new `auth.uid()` and new `public.users` row. We accept this trade-off rather than building username-based recovery, because: (a) AWSCC ID alone isn't a credential, (b) password recovery infrastructure adds a lot for a one-time event, and (c) duplicate `public.users` rows with the same AWSCC ID are tolerable (we can dedupe post-event if needed).
  
 ## Data Models
  
@@ -407,11 +415,13 @@ CREATE TRIGGER update_users_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 ```
+
+**Identity linkage with `auth.users`:** `public.users.id` is conceptually a foreign key to `auth.users.id` (the value returned by `auth.uid()`). The schema does not enforce this with an explicit `REFERENCES auth.users(id)` because RLS policies in `005_enable_rls_and_policies.sql` enforce it at the row level (`WITH CHECK (auth.uid() = id)`). The RLS check makes the `gen_random_uuid()` default unsafe for the onboarding insert path — the Route Handler MUST explicitly pass `id = auth.uid()`. Service-role inserts bypass RLS and may use the default.
  
 **TypeScript Interface:**
 ```typescript
 interface User {
-  id: string; // UUID
+  id: string; // UUID — equals auth.uid() for users created via onboarding
   username: string;
   awsccId: string;
   createdAt: string; // ISO 8601
@@ -549,6 +559,8 @@ interface OnboardingProgress {
 ### API Route Interfaces
  
 #### POST /api/users
+
+**Precondition:** the client MUST already have a Supabase session (from `signInAnonymously()` called in the onboarding Step 2 handler) and MUST send the session in an `Authorization: Bearer <access_token>` header. The Route Handler reads `auth.uid()` from that session and uses it as `users.id`.
  
 **Request:**
 ```typescript
@@ -561,10 +573,11 @@ interface CreateUserRequest {
 **Response (201 Created):**
 ```typescript
 interface CreateUserResponse {
-  user: User;
-  sessionToken: string;
+  user: User; // user.id === auth.uid() of the caller
 }
 ```
+
+The session token is NOT returned by this endpoint — the client already has it from `signInAnonymously()` and Supabase persists it in `localStorage` automatically.
  
 **Error Response (400 Bad Request):**
 ```typescript

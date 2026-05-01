@@ -104,6 +104,10 @@ export const supabaseAdmin = createAdminSupabaseClient;
 // ---------------------------------------------------------------------------
 export type Database = {
   public: {
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
     Tables: {
       users: {
         Row: {
@@ -127,6 +131,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       projects: {
         Row: {
@@ -156,6 +161,14 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'projects_author_id_fkey';
+            columns: ['author_id'];
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
       };
       reactions: {
         Row: {
@@ -179,6 +192,20 @@ export type Database = {
           reaction_type?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'reactions_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'reactions_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          }
+        ];
       };
       onboarding_progress: {
         Row: {
@@ -205,6 +232,14 @@ export type Database = {
           completed_at?: string | null;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: 'onboarding_progress_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
       };
     };
   };

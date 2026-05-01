@@ -25,12 +25,13 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
 ## Tasks
 
 - [x] 1. Project setup and configuration
-  - Initialize Next.js 15+ project with TypeScript and App Router
-  - Configure Tailwind CSS 4.0+ with custom theme
-  - Install and configure dependencies (Supabase client, Framer Motion, MagicUI)
-  - Set up TypeScript strict mode and path aliases (@/*)
-  - Create environment variable configuration file
+  - [x] Initialize Next.js 15+ project with TypeScript and App Router (Next.js 16.2.4)
+  - [x] Configure Tailwind CSS 4.0+ with custom theme (v4 with `@theme inline` in `src/app/globals.css`)
+  - [x] Install and configure dependencies — Supabase client (`@supabase/supabase-js@^2.105.1`), Framer Motion (`framer-motion@^12.38.0`) + `motion@^12.38.0`, MagicUI (installed via shadcn CLI, see decision log)
+  - [x] Set up TypeScript strict mode and path aliases (`@/*` → `./src/*`)
+  - [x] Create environment variable configuration file (`.env.local`, `.env.example`) — verified linked to Supabase project `bkffopfnejyotqmhhgzu` (from-vibe-to-live)
   - _Requirements: 20.1, 20.3, 20.4, 20.5, 20.6, 20.7_
+  - _Status: Verified by `npm run build` passing._
 
 - [x] 2. Supabase database schema setup
   - [x] 2.1 Create Users table with UUID primary key, unique username constraint, and timestamps
@@ -60,170 +61,84 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
   - [x] 2.5 Write property test for completion timestamp automation
     - **Property 14: Completion timestamp automation**
     - **Validates: Requirements 14.5**
+    - _Status: Verified — 100 iterations passing in ~40s. Tolerance widened from 1s to 60s in [tests/properties/progress.property.test.ts](../tests/properties/progress.property.test.ts) to absorb ~9s clock skew between local machine and the Supabase Postgres server. Two negative-case tests (true→true, false→false) also pass._
 
-- [ ] 3. Supabase authentication and Row Level Security (RLS)
-  - Configure Supabase Auth settings for email/password authentication
-  - Create RLS policies for Users table (users can read all, insert own, update own)
-  - Create RLS policies for Projects table (all can read, authenticated can insert, authors can update/delete)
-  - Create RLS policies for Reactions table (all can read, authenticated can insert own, users can delete own)
-  - Create RLS policies for Onboarding_Progress table (users can only access their own records)
+    - [x] 2.6 Apply migrations to remote Supabase
+      - Migrations 001–004 (and 005 from Task 3) pushed to `bkffopfnejyotqmhhgzu` via `supabase db push --include-all` on 2026-05-01.
+      - CLI is linked to the project (`supabase/config.toml` exists; project ref stored in `.env.local`).
+
+- [x] 3. Supabase authentication and Row Level Security (RLS)
+  - [x] **Enable anonymous sign-ins** — confirmed ON in Dashboard → Authentication → Providers → "Anonymous Sign-Ins" on 2026-05-01. Anonymous users will inherit the `authenticated` role, so all existing RLS policies (which gate writes via `auth.uid() = ...`) apply correctly.
+  - [x] Create RLS policies for Users table (users can read all, insert own, update own) — applied via `005_enable_rls_and_policies.sql`
+  - [x] Create RLS policies for Projects table (all can read, authenticated can insert, authors can update/delete) — applied via `005_enable_rls_and_policies.sql`
+  - [x] Create RLS policies for Reactions table (all can read, authenticated can insert own, users can delete own) — applied via `005_enable_rls_and_policies.sql`
+  - [x] Create RLS policies for Onboarding_Progress table (users can only access their own records) — applied via `005_enable_rls_and_policies.sql`
   - _Requirements: 19.1, 19.2, 19.5_
 
-- [ ] 4. Core TypeScript types and interfaces
-  - Create TypeScript interfaces for all data models (User, Project, Reaction, OnboardingProgress)
-  - Create API request/response type definitions
-  - Create component prop type definitions
-  - Create error response type definitions
-  - Set up shared types directory structure (src/types/)
+- [x] 4. Core TypeScript types and interfaces
+  - [x] Data model interfaces (`User`, `Project`, `ProjectWithAuthor`, `Reaction`, `OnboardingProgress`) in [src/types/index.ts](../src/types/index.ts). `User.id` documented as equal to `auth.uid()` (per anonymous-auth decision).
+  - [x] API request/response types (`CreateUserRequest/Response`, `GetUserResponse`, `CreateProjectRequest/Response`, `GetProjectsResponse`, `CreateReactionRequest/Response`, `UpdateProgressRequest/Response`). `CreateUserResponse.sessionToken` removed — session is client-managed via `signInAnonymously()`.
+  - [x] Component prop types for every component referenced in [design.md](design.md) (countdown, CTA, modal, navigation, form, accordion, project grid/card, reaction button).
+  - [x] Error response type (`ErrorResponse` with `error`, `message`, optional `details`).
+  - [x] Shared types directory at [src/types/](../src/types/).
   - _Requirements: 20.4_
+  - _Status: Verified by `npm run build` (TypeScript compiles clean)._
 
-- [ ] 5. Supabase client configuration and utilities
-  - Create Supabase client initialization for server-side usage
-  - Create Supabase client initialization for client-side usage
-  - Create authentication helper functions (getSession, requireAuth middleware)
-  - Create database query helper functions with type safety
+- [x] 5. Supabase client configuration and utilities
+  - [x] Browser client — `getBrowserSupabaseClient()` (singleton, `persistSession: true`, `localStorage`) in [src/lib/supabase.ts](../src/lib/supabase.ts). Backwards-compatible `supabase` const export retained.
+  - [x] Per-request server client — `createServerSupabaseClient(accessToken?)` factory; forwards `Authorization: Bearer <token>` so PostgREST sees the right `auth.uid()` for RLS.
+  - [x] Admin client — `createAdminSupabaseClient()` (service role, bypasses RLS). `supabaseAdmin` alias retained.
+  - [x] All clients are type-parameterized with `<Database>` for end-to-end type safety on queries.
+  - [x] Auth middleware — [src/lib/auth.ts](../src/lib/auth.ts) exports `getBearerToken(request)`, `getSession(request)` (validates token via `supabase.auth.getUser`), `requireAuth(request)` (returns `{ session }` or `{ response: 401 }`), and `errorResponse(status, error, message, details?)` for consistent error shape (Req 10.8 / Property 13).
   - _Requirements: 19.1, 19.5, 20.3_
+  - _Status: Verified by `npm run build`. Property 14 test still passes after refactor (type-only import from `@/lib/supabase` still works)._
 
-- [ ] 6. Implement API Route: POST /api/users
-  - [ ] 6.1 Create Route Handler for user creation with validation
-    - Implement POST handler in app/api/users/route.ts
-    - Add request body validation (username pattern, awsccId required)
-    - Create user record in Supabase database
-    - Create Supabase Auth session
-    - Return user ID and session token
-    - Handle duplicate username error (409 Conflict)
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 10.1, 10.7, 10.8_
+- [x] 6. Implement API Route: POST /api/users
+  - [x] 6.1 Created in [src/app/api/users/route.ts](../src/app/api/users/route.ts). Anonymous-session precondition; `requireAuth` middleware extracts `auth.uid()`; `validateUserForm` enforces username pattern + non-empty awsccId; insert sets `id = auth.uid()`; 23505 mapped to 409 (username vs PK collision distinguished); error shape consistent.
+  - [x] 6.2 Property 5 (username validation pattern) — [tests/properties/validation.property.test.ts](../tests/properties/validation.property.test.ts). 3 sub-properties (iff pattern match, allowed alphabet always passes, any disallowed char rejected). 200 runs each. **Verified passing** (0.8s).
+  - [x] 6.3 Property 6 (UUID format on success) — [tests/properties/api.property.test.ts](../tests/properties/api.property.test.ts). Hits POST /api/users with generated valid inputs and asserts `user.id` matches UUID v4 + equals `auth.uid()`.
+  - [x] 6.4 Property 13 (error response shape) — same file. Asserts 401 (no auth) and 400 (invalid username) bodies satisfy `ErrorResponse`.
+  - [x] 6.5 Integration tests for POST /api/users — [tests/integration/api/users.integration.test.ts](../tests/integration/api/users.integration.test.ts). 8 cases: happy path, missing auth, malformed auth, invalid username, missing awsccId, non-JSON body, duplicate username (409), same-auth-user-twice (409).
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 10.1, 10.7, 10.8_
 
-  - [ ] 6.2 Write property test for username validation pattern compliance
-    - **Property 5: Username validation pattern compliance**
-    - **Validates: Requirements 4.2**
+- [x] 7. Implement API Route: GET /api/users/[id]
+  - [x] 7.1 Created in [src/app/api/users/[id]/route.ts](../src/app/api/users/%5Bid%5D/route.ts). Returns user + onboardingProgress array (RLS-filtered). 401/404/500 handled.
+  - [x] 7.2 Integration tests — [tests/integration/api/users-get.integration.test.ts](../tests/integration/api/users-get.integration.test.ts). Happy path, 404, 401, RLS-cross-user check (other user sees empty progress).
+  - _Requirements: 10.2, 10.7, 10.8_
 
-  - [ ] 6.3 Write property test for user creation returns valid UUID
-    - **Property 6: User creation returns valid UUID**
-    - **Validates: Requirements 4.6, 11.5**
+- [x] 8. Implement API Route: PATCH /api/users/[id]/progress
+  - [x] 8.1 Created in [src/app/api/users/[id]/progress/route.ts](../src/app/api/users/%5Bid%5D/progress/route.ts). Validates stepNumber ∈ [1,7] + isCompleted boolean; enforces path id == auth.uid() (403 otherwise); upserts on (user_id, step_number).
+  - [x] 8.2 Property 7 (completed-step persistence) — [tests/properties/progress-state.property.test.ts](../tests/properties/progress-state.property.test.ts). PATCH-then-GET cycle confirms isCompleted persists across reads. 5 runs (each spins up an anon user — capped for speed).
+  - [x] 8.3 Integration tests — [tests/integration/api/progress.integration.test.ts](../tests/integration/api/progress.integration.test.ts). Initial-insert sets completed_at, idempotency, 401, 403 (cross-user), 400 invalid step, 400 non-boolean isCompleted.
+  - **NOTE: required new migration [006_extend_completed_at_trigger.sql](../supabase/migrations/006_extend_completed_at_trigger.sql)** to fire the trigger on INSERT too (the original was BEFORE UPDATE only, so the upsert-creates-new-row case would have left completed_at null).
+  - _Requirements: 5.3, 10.6, 10.7, 10.8, 19.5_
 
-  - [ ] 6.4 Write property test for API error response format consistency
-    - **Property 13: API error response format consistency**
-    - **Validates: Requirements 10.7, 10.8**
+- [x] 9. Implement API Route: POST /api/projects
+  - [x] 9.1 Created in [src/app/api/projects/route.ts](../src/app/api/projects/route.ts) (combined with GET). Validates title/description/optional mediaUrl URL; 23503 (no users row) mapped to 409 NO_USER_PROFILE.
+  - [x] 9.2 Integration tests — [tests/integration/api/projects.integration.test.ts](../tests/integration/api/projects.integration.test.ts) (POST + GET combined). Happy path, 401, missing title (400), invalid mediaUrl (400), orphan auth user (409).
+  - _Requirements: 8.3, 8.4, 10.3, 10.7, 10.8_
 
-  - [ ] 6.5 Write integration tests for POST /api/users
-    - Test successful user creation with valid data
-    - Test duplicate username returns 409 Conflict
-    - Test invalid username pattern returns 400 Bad Request
-    - Test missing awsccId returns 400 Bad Request
-    - Verify user record exists in database after creation
-    - Verify session token is valid
+- [x] 10. Implement API Route: GET /api/projects
+  - [x] 10.1 Implemented alongside POST in same file. FK-embed for author username, single roundtrip for reactions to compute counts + hasReacted. ORDER BY created_at DESC.
+  - [x] 10.2 Property 8 (field completeness) — [tests/properties/projects.property.test.ts](../tests/properties/projects.property.test.ts). Verifies title/description/author.username/createdAt are non-empty for every returned project.
+  - [x] 10.3 Property 9 (chronological sorting) — same file. Adjacent items satisfy P[i-1].createdAt >= P[i].createdAt.
+  - [x] 10.4 Property 10 (reaction count accuracy) — same file. Cross-checks endpoint count against direct `SELECT COUNT(*)` from reactions.
+  - [x] 10.5 Integration tests — same file as 9.2. Newest-first order, author username + reactionCount + hasReacted on each project, unauthenticated public read.
+  - _Requirements: 7.1, 7.2, 7.3, 7.4, 9.3, 9.5, 10.4, 10.7, 10.8_
 
-- [ ] 7. Implement API Route: GET /api/users/[id]
-  - [ ] 7.1 Create Route Handler for user retrieval with onboarding progress
-    - Implement GET handler in app/api/users/[id]/route.ts
-    - Fetch user record from database
-    - Fetch associated onboarding progress records
-    - Return user data with progress array
-    - Handle user not found (404 Not Found)
-    - _Requirements: 10.2, 10.7, 10.8_
+- [x] 11. Implement API Route: POST /api/reactions
+  - [x] 11.1 Created in [src/app/api/reactions/route.ts](../src/app/api/reactions/route.ts). 23505 → 409 CONFLICT, 23503 → 404 NOT_FOUND. Default reactionType is "like".
+  - [x] 11.2 Property 11 (duplicate prevention) — [tests/properties/reactions.property.test.ts](../tests/properties/reactions.property.test.ts). Multiple repeat attempts each return 409; cross-check that reactions table has exactly 1 row for (user, project).
+  - [x] 11.3 Property 12 (hasReacted flag consistency) — same file. Reactor sees `hasReacted: true`; bystander (separate user) sees `hasReacted: false`; pre-reaction state shows false for everyone.
+  - [x] 11.4 Integration tests — [tests/integration/api/reactions.integration.test.ts](../tests/integration/api/reactions.integration.test.ts). Happy path, 401, 400 (missing projectId), 404 (unknown projectId), 409 (duplicate).
+  - _Requirements: 9.2, 9.4, 10.5, 10.7, 10.8_
 
-  - [ ] 7.2 Write integration tests for GET /api/users/[id]
-    - Test successful user retrieval with existing user
-    - Test 404 response for non-existent user
-    - Verify onboarding progress is included in response
-    - Test response format matches GetUserResponse interface
-
-- [ ] 8. Implement API Route: PATCH /api/users/[id]/progress
-  - [ ] 8.1 Create Route Handler for updating onboarding progress
-    - Implement PATCH handler in app/api/users/[id]/progress/route.ts
-    - Validate request body (stepNumber 1-7, isCompleted boolean)
-    - Require authentication (validate session token)
-    - Upsert onboarding progress record
-    - Return updated progress record
-    - _Requirements: 5.3, 10.6, 10.7, 10.8, 19.5_
-
-  - [ ] 8.2 Write property test for completed step state persistence
-    - **Property 7: Completed step state persistence**
-    - **Validates: Requirements 5.4**
-
-  - [ ] 8.3 Write integration tests for PATCH /api/users/[id]/progress
-    - Test successful progress update with valid data
-    - Test 401 response without authentication
-    - Test 400 response with invalid step number
-    - Verify completed_at is set when is_completed changes to true
-    - Test idempotency (updating same step multiple times)
-
-- [ ] 9. Implement API Route: POST /api/projects
-  - [ ] 9.1 Create Route Handler for project creation
-    - Implement POST handler in app/api/projects/route.ts
-    - Validate request body (title, description required, mediaUrl optional)
-    - Require authentication (get user ID from session)
-    - Create project record with author_id
-    - Return created project
-    - _Requirements: 8.3, 8.4, 10.3, 10.7, 10.8_
-
-  - [ ] 9.2 Write integration tests for POST /api/projects
-    - Test successful project creation with authenticated user
-    - Test 401 response without authentication
-    - Test 400 response with missing required fields
-    - Verify project record exists in database
-    - Verify author_id matches authenticated user
-
-- [ ] 10. Implement API Route: GET /api/projects
-  - [ ] 10.1 Create Route Handler for retrieving all projects with author info and reactions
-    - Implement GET handler in app/api/projects/route.ts
-    - Fetch all projects with JOIN to users table for author username
-    - Include reaction count for each project
-    - Include hasReacted flag for current user (if authenticated)
-    - Sort projects by created_at DESC (newest first)
-    - Return projects array
-    - _Requirements: 7.1, 7.2, 7.3, 7.4, 9.3, 9.5, 10.4, 10.7, 10.8_
-
-  - [ ] 10.2 Write property test for project card field completeness
-    - **Property 8: Project card field completeness**
-    - **Validates: Requirements 7.2**
-
-  - [ ] 10.3 Write property test for project list chronological sorting
-    - **Property 9: Project list chronological sorting**
-    - **Validates: Requirements 7.3**
-
-  - [ ] 10.4 Write property test for reaction count display accuracy
-    - **Property 10: Reaction count display accuracy**
-    - **Validates: Requirements 9.3**
-
-  - [ ] 10.5 Write integration tests for GET /api/projects
-    - Test successful retrieval of all projects
-    - Test projects are sorted by created_at DESC
-    - Test author username is included for each project
-    - Test reaction count is accurate
-    - Test hasReacted flag is correct for authenticated user
-    - Test empty array returned when no projects exist
-
-- [ ] 11. Implement API Route: POST /api/reactions
-  - [ ] 11.1 Create Route Handler for creating reactions with duplicate prevention
-    - Implement POST handler in app/api/reactions/route.ts
-    - Validate request body (projectId required, reactionType defaults to 'like')
-    - Require authentication (get user ID from session)
-    - Check for existing reaction (user_id + project_id)
-    - Return 409 Conflict if duplicate reaction exists
-    - Create reaction record if not duplicate
-    - Return created reaction
-    - _Requirements: 9.2, 9.4, 10.5, 10.7, 10.8_
-
-  - [ ] 11.2 Write property test for duplicate reaction prevention
-    - **Property 11: Duplicate reaction prevention**
-    - **Validates: Requirements 9.4**
-
-  - [ ] 11.3 Write property test for reaction button active state consistency
-    - **Property 12: Reaction button active state consistency**
-    - **Validates: Requirements 9.5**
-
-  - [ ] 11.4 Write integration tests for POST /api/reactions
-    - Test successful reaction creation with authenticated user
-    - Test 401 response without authentication
-    - Test 409 response when user already reacted to project
-    - Test 400 response with invalid projectId
-    - Verify reaction record exists in database
-    - Verify unique constraint prevents duplicate reactions
-
-- [ ] 12. Checkpoint - Ensure all API routes and database tests pass
-  - Ensure all tests pass, ask the user if questions arise.
+- [ ] 12. Checkpoint — Ensure all API routes and database tests pass
+  - **Code complete.** All 5 route handlers + 11 test files (5 property test suites covering Properties 5–14, 4 integration test suites with ~25 cases) compile cleanly (`npx tsc --noEmit`) and the production build registers all routes (`npm run build` shows /api/users, /api/users/[id], /api/users/[id]/progress, /api/projects, /api/reactions as dynamic routes).
+  - **Property 5 verified passing** (200 runs each on 3 sub-properties; 0.8s, no DB calls).
+  - **Blocked on two things to run remaining tests:**
+    1. **Anonymous sign-ins are still server-side disabled** (verified by direct curl to `/auth/v1/signup` — returns `anonymous_provider_disabled`). Despite the dashboard toggle screenshot showing it ON. Re-flip the toggle in Supabase Dashboard → Authentication → Providers → "Allow anonymous sign-ins" → ON → save.
+    2. **Migration 006 not yet pushed** — `supabase db push` to apply the trigger fix needed for the "first-insert-with-isCompleted=true sets completed_at" assertion in 8.3 / Property 7.
 
 - [ ] 13. Implement countdown timer utility and hook
   - [ ] 13.1 Create countdown calculation utility function
@@ -329,10 +244,12 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
     - Implement UserInfoForm with controlled inputs
     - Add username and awsccId input fields
     - Implement real-time validation with error messages
-    - Handle form submission (call POST /api/users)
+    - Handle form submission:
+      1. Call `supabase.auth.signInAnonymously()` first (Supabase JS client auto-persists the session to `localStorage`).
+      2. Then call `POST /api/users` with the access token in the Authorization header.
     - Display loading state during submission
-    - Handle success (store session, proceed to step 3)
-    - Handle errors (display inline error messages)
+    - Handle success (proceed to step 3 — session is already persisted)
+    - Handle errors (display inline error messages; if user creation fails, sign out the anonymous session to avoid orphaned auth.users rows)
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 18.2_
 
   - [ ] 18.2 Write property test for validation error inline display
@@ -386,9 +303,11 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
 - [ ] 21. Implement authentication context and session management
   - [ ] 21.1 Create AuthProvider context with Supabase Auth
     - Implement AuthProvider with Supabase Auth client
-    - Manage user session state
-    - Provide useAuth hook for accessing current user
-    - Handle session persistence across page refreshes
+    - Use anonymous sign-in (`signInAnonymously()`) — no email/password.
+    - Configure `persistSession: true` (already set in `src/lib/supabase.ts`) so the session lives in `localStorage` and survives refresh/tab close.
+    - Subscribe to `onAuthStateChange` to keep React state in sync.
+    - Provide a `useAuth()` hook returning `{ session, user, signOut }`.
+    - Handle the case where a user already has a session in localStorage on mount (returning user) — don't trigger a new anonymous sign-in.
     - _Requirements: 19.2, 19.3, 19.4_
 
   - [ ] 21.2 Write property test for session persistence across page refresh
@@ -627,3 +546,16 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
 - All code examples should use TypeScript 5.0+ with strict mode enabled
 - Follow Next.js 15+ App Router conventions and best practices
 - Refer to design document for detailed specifications and interfaces
+
+## Decisions Log
+
+A running log of implementation choices that diverge from or extend `design.md`. Each entry: date — decision — rationale.
+
+- **2026-05-01 — Spec folder moved from `.kiro/specs/aws-community-showcase/` to project-root `aws-community-showcase/`.** User-initiated. No design impact; just a path change. Memory note + `MEMORY.md` updated to reference the new path.
+- **2026-05-01 — MagicUI installed via shadcn CLI, not as a single npm package.** MagicUI publishes per-component registry URLs consumed by `shadcn add`. We ran `npx shadcn@latest init --defaults` (created `components.json`, `src/lib/utils.ts`, `src/components/ui/button.tsx`) and verified end-to-end with `npx shadcn@latest add https://magicui.design/r/blur-fade.json` (`src/components/ui/blur-fade.tsx`). Adds deps: `clsx`, `tailwind-merge`, `class-variance-authority`, `lucide-react`, `motion`, `tw-animate-css`, `@base-ui/react`, `shadcn`. Fulfills Req 20.7.
+- **2026-05-01 — Linear.app palette migrated from `tailwind.config.ts` `extend.colors` to CSS custom properties in `src/app/globals.css`.** Tailwind v4's `@theme inline` block in CSS supersedes the JS config, so the JS `extend.colors` block was effectively dead. Now `--primary: #5E6AD2` etc. drive both shadcn tokens and Tailwind utilities. Follow-up: prune the dead block in `tailwind.config.ts`.
+- **2026-05-01 — Property-test env loading uses `dotenv` + `tests/jest.setup.ts`.** Jest doesn't auto-load `.env.local` like Next.js does. Tried `@next/env`'s `loadEnvConfig` first; behaved correctly under `node` but not in Jest's `setupFiles` context (env vars stayed unset in the test process). Switched to a plain `dotenv.config({ path: <abs path> })` call, which works. Also wired via `setupFiles` (not `setupFilesAfterEach`) so env is available when test modules import.
+- **2026-05-01 — Property 14 timestamp tolerance widened from 1s to 60s.** The trigger uses server-side `NOW()`; comparing against client-side `Date.now()` failed by ~9s due to clock skew. Widening the bracket preserves the spirit of the property (timestamp is set, valid ISO 8601, recent) without introducing brittleness from clock drift.
+- **2026-05-01 — Linked Supabase project: `bkffopfnejyotqmhhgzu` (from-vibe-to-live).** All migrations 001–005 applied. Auth provider settings still need a Dashboard pass to enable email auth and (for dev) disable email confirmation.
+- **2026-05-01 — Migration 006_extend_completed_at_trigger.sql.** Original `set_completed_at` trigger was `BEFORE UPDATE` only, which left `completed_at = NULL` when the upsert in `PATCH /api/users/[id]/progress` resulted in an INSERT with `is_completed = true`. Migration 006 extends the trigger to `BEFORE INSERT OR UPDATE`. Pending push to remote.
+- **2026-05-01 — Auth strategy: anonymous Supabase sign-in + `localStorage` persistence.** One-time event, no passwords, no recovery flow. Step 2 of onboarding calls `supabase.auth.signInAnonymously()` first, then `POST /api/users` with the resulting bearer token. The Route Handler MUST set `users.id = auth.uid()` because the existing RLS policy `WITH CHECK (auth.uid() = id)` (in `005_enable_rls_and_policies.sql`) rejects inserts whose `id` doesn't match the caller's `auth.uid()`. The `gen_random_uuid()` default on `users.id` is therefore unsafe for the onboarding insert path. Lost localStorage = lost identity (acceptable trade-off for the event scale; duplicates by AWSCC ID can be deduped post-event if needed). The "enable email auth" dashboard step from Task 3 is consequently NOT required for this deployment — only "Allow anonymous sign-ins" was enabled (Authentication → Providers → Anonymous Sign-Ins → ON, confirmed by user 2026-05-01). Implementation impact: Tasks 6.1, 18.1, 21.1 updated with the explicit flow. Supabase warning acknowledged: anonymous users carry the `authenticated` role; existing RLS policies in `005` already restrict writes via `auth.uid() = ...` checks, so this is the intended behavior.
