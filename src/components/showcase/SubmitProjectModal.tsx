@@ -3,12 +3,14 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ProjectForm } from './ProjectForm';
+import type { ProjectWithAuthor } from '@/types';
 
 interface SubmitProjectModalProps {
   isOpen: boolean;
   isAuthenticated: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialData?: ProjectWithAuthor | null;
 }
 
 export function SubmitProjectModal({
@@ -16,6 +18,7 @@ export function SubmitProjectModal({
   isAuthenticated,
   onClose,
   onSuccess,
+  initialData,
 }: SubmitProjectModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -79,7 +82,7 @@ export function SubmitProjectModal({
             id="modal-title"
             style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--foreground)' }}
           >
-            Share Your Project
+            {initialData ? 'Edit Project' : 'Share Your Project'}
           </h2>
           <button
             onClick={onClose}
@@ -104,6 +107,7 @@ export function SubmitProjectModal({
           <ProjectForm
             onSuccess={() => { onSuccess(); onClose(); }}
             onCancel={onClose}
+            initialData={initialData}
           />
         ) : (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>

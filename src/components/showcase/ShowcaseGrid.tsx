@@ -15,7 +15,18 @@ export function ShowcaseGrid({ initialProjects }: ShowcaseGridProps) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectWithAuthor | null>(null);
   const [reactingIds, setReactingIds] = useState<Set<string>>(new Set());
+
+  function handleEditProject(project: ProjectWithAuthor) {
+    setEditingProject(project);
+    setModalOpen(true);
+  }
+
+  function handleCloseModal() {
+    setModalOpen(false);
+    setTimeout(() => setEditingProject(null), 200);
+  }
 
   useEffect(() => {
     const supabase = getBrowserSupabaseClient();
@@ -198,18 +209,23 @@ export function ShowcaseGrid({ initialProjects }: ShowcaseGridProps) {
       ) : (
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
             gap: '20px',
           }}
         >
           {projects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={currentUserId ? project : { ...project, hasReacted: false }}
-              onReact={handleReact}
-              reactPending={reactingIds.has(project.id)}
-            />
+            <div key={project.id} style={{ flex: '1 1 300px', maxWidth: '350px', width: '100%' }}>
+              <ProjectCard
+                key={project.id}
+                project={currentUserId ? project : { ...project, hasReacted: false }}
+                onReact={handleReact}
+                reactPending={reactingIds.has(project.id)}
+                currentUserId={currentUserId}
+                onEdit={handleEditProject}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -217,8 +233,9 @@ export function ShowcaseGrid({ initialProjects }: ShowcaseGridProps) {
       <SubmitProjectModal
         isOpen={modalOpen}
         isAuthenticated={isAuthenticated}
-        onClose={() => setModalOpen(false)}
+        onClose={handleCloseModal}
         onSuccess={refreshProjects}
+        initialData={editingProject}
       />
     </>
   );

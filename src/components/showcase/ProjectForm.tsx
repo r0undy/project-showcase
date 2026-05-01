@@ -4,10 +4,12 @@ import { useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { getBrowserSupabaseClient } from '@/lib/supabase';
 import { isValidUrl } from '@/lib/validation';
+import type { ProjectWithAuthor } from '@/types';
 
 interface ProjectFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  initialData?: ProjectWithAuthor | null;
 }
 
 interface FormState {
@@ -26,14 +28,18 @@ interface FieldErrors {
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
 
-export function ProjectForm({ onSuccess, onCancel }: ProjectFormProps) {
-  const [form, setForm] = useState<FormState>({ title: '', description: '', url: '' });
+export function ProjectForm({ onSuccess, onCancel, initialData }: ProjectFormProps) {
+  const [form, setForm] = useState<FormState>({ 
+    title: initialData?.title ?? '', 
+    description: initialData?.description ?? '', 
+    url: initialData?.url ?? '' 
+  });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Partial<Record<keyof FormState, boolean>>>({});
 
   // Preview image: can come from Puppeteer auto-screenshot OR manual upload
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewSource, setPreviewSource] = useState<'screenshot' | 'upload' | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.mediaUrl ?? null);
+  const [previewSource, setPreviewSource] = useState<'screenshot' | 'upload' | null>(initialData?.mediaUrl ? 'upload' : null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -179,8 +185,11 @@ export function ProjectForm({ onSuccess, onCancel }: ProjectFormProps) {
         return;
       }
 
-      const res = await fetch('/api/projects', {
-        method: 'POST',
+      const method = initialData ? 'PATCH' : 'POST';
+      const endpoint = initialData ? `/api/projects/${initialData.id}` : '/api/projects';
+
+      const res = await fetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
@@ -195,7 +204,7 @@ export function ProjectForm({ onSuccess, onCancel }: ProjectFormProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setErrors({ submit: data.message ?? 'Failed to submit project. Please try again.' });
+        setErrors({ submit: data.message ?? (initialData ? 'Failed to update project. Please try again.' : 'Failed to submit project. Please try again.') });
         return;
       }
 
@@ -522,7 +531,7 @@ export function ProjectForm({ onSuccess, onCancel }: ProjectFormProps) {
             transition: 'opacity 0.15s',
           }}
         >
-          {submitting ? 'Submitting…' : previewLoading ? 'Processing…' : 'Submit Project'}
+          {submitting ? (initialData ? 'Saving…' : 'Submitting…') : previewLoading ? 'Processing…' : (initialData ? 'Save Changes' : 'Submit Project')}
         </button>
       </div>
 

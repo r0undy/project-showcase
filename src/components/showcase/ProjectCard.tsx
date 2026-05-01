@@ -7,9 +7,11 @@ interface ProjectCardProps {
   project: ProjectWithAuthor;
   onReact: (projectId: string) => Promise<void>;
   reactPending?: boolean;
+  currentUserId?: string | null;
+  onEdit?: (project: ProjectWithAuthor) => void;
 }
 
-export function ProjectCard({ project, onReact, reactPending = false }: ProjectCardProps) {
+export function ProjectCard({ project, onReact, reactPending = false, currentUserId, onEdit }: ProjectCardProps) {
   const { title, description, mediaUrl, url, author, reactionCount, hasReacted } = project;
 
   return (
@@ -115,9 +117,33 @@ export function ProjectCard({ project, onReact, reactPending = false }: ProjectC
             marginTop: '4px',
           }}
         >
-          <span style={{ fontSize: '12px', color: 'oklch(55% 0.08 285)' }}>
-            @{author.username}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', color: 'oklch(55% 0.08 285)' }}>
+              @{author.username}
+            </span>
+            {currentUserId === project.authorId && onEdit && (
+              <button
+                onClick={() => onEdit(project)}
+                aria-label="Edit project"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: 'none',
+                  border: 'none',
+                  color: 'oklch(60% 0.1 285)',
+                  cursor: 'pointer',
+                  padding: '2px',
+                }}
+                className="hover:text-pink-500 transition-colors"
+                title="Edit project"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+            )}
+          </div>
 
           <button
             onClick={() => onReact(project.id)}

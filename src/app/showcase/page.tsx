@@ -24,7 +24,7 @@ export default async function ShowcasePage() {
 
       <div
         className="relative z-10 mx-auto w-full"
-        style={{ maxWidth: '1100px', padding: '120px 24px 80px' }}
+        style={{ padding: '120px 24px 80px' }}
       >
         <ShowcaseGrid initialProjects={projects} />
       </div>
