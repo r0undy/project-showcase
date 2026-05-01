@@ -62,11 +62,12 @@ describe('API Property Tests', () => {
             }
           }
         ),
-        // Capped to keep us under Supabase's anon-signup rate limits across the
-        // whole property suite. Each iteration creates a fresh auth user.
-        { numRuns: 5 }
+        // Each iteration must use a fresh auth user (id is bound to auth.uid()).
+        // Capped at 3 to keep the suite under Supabase's anon-signup rate limit;
+        // raise the dashboard rate limit and increase this for stronger coverage.
+        { numRuns: 3 }
       );
-    }, 120_000);
+    }, 240_000);
   });
 
   /**

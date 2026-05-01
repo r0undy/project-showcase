@@ -29,13 +29,15 @@ describe('Onboarding Step Persistence Property Tests', () => {
   it(
     'a step marked completed is reported as completed on subsequent reads',
     async () => {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.integer({ min: 4, max: 6 }),
-          async (stepNumber) => {
-            const u = await createTestUserViaAuth();
-            try {
-              // Mark step done
+      // Share a single anonymous user across iterations: different stepNumbers
+      // are independent rows (UNIQUE on user_id+step_number), so we do not need
+      // a fresh user each time. This avoids hammering the anon-signup rate limit.
+      const u = await createTestUserViaAuth();
+      try {
+        await fc.assert(
+          fc.asyncProperty(
+            fc.integer({ min: 4, max: 6 }),
+            async (stepNumber) => {
               const patchReq = buildRequest(
                 `http://test.local/api/users/${u.userId}/progress`,
                 { method: 'PATCH', accessToken: u.accessToken, body: { stepNumber, isCompleted: true } }
@@ -58,13 +60,13 @@ describe('Onboarding Step Persistence Property Tests', () => {
               );
               expect(target).toBeDefined();
               expect(target!.isCompleted).toBe(true);
-            } finally {
-              await deleteTestUser(u.userId);
             }
-          }
-        ),
-        { numRuns: 5 } // 5 anonymous users per run is plenty given the cost.
-      );
+          ),
+          { numRuns: 6 }
+        );
+      } finally {
+        await deleteTestUser(u.userId);
+      }
     },
     180_000
   );

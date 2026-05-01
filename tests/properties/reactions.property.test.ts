@@ -30,15 +30,18 @@ describe('Reactions API Property Tests', () => {
     it(
       'second-and-later reactions by the same user on the same project return 409 and do not create extra rows',
       async () => {
-        await fc.assert(
-          fc.asyncProperty(
-            // Number of repeated attempts after the first successful one (1..3)
-            fc.integer({ min: 1, max: 3 }),
-            async (extraAttempts) => {
-              const author = await createTestUserViaAuth();
-              const reactor = await createTestUserViaAuth();
-              try {
-                // Set up a project owned by author
+        // Reuse a single (author, reactor) pair across iterations. Each iteration
+        // tests `extraAttempts` repeated 409s on the SAME (user, project) row,
+        // then deletes the reaction so the next iteration can re-add it. This
+        // keeps anon-signup count to 2 for the entire property test.
+        const author = await createTestUserViaAuth();
+        const reactor = await createTestUserViaAuth();
+        try {
+          await fc.assert(
+            fc.asyncProperty(
+              fc.integer({ min: 1, max: 3 }),
+              async (extraAttempts) => {
+                // Fresh project each iteration (so reactor can react again).
                 const created = await POST_PROJECT(
                   buildRequest('http://test.local/api/projects', {
                     method: 'POST',
@@ -78,14 +81,15 @@ describe('Reactions API Property Tests', () => {
                   .eq('user_id', reactor.userId)
                   .eq('project_id', project.id);
                 expect(count).toBe(1);
-              } finally {
-                await deleteTestUser(reactor.userId);
-                await deleteTestUser(author.userId);
               }
-            }
-          ),
-          { numRuns: 3 }
-        );
+            ),
+            { numRuns: 3 }
+          );
+        } finally {
+          // Cascade-deletes projects + reactions through FKs.
+          await deleteTestUser(reactor.userId);
+          await deleteTestUser(author.userId);
+        }
       },
       TT
     );
