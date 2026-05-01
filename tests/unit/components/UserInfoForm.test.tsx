@@ -28,7 +28,7 @@ function renderForm(opts: RenderOpts = {}) {
   const setField = opts.setField ?? jest.fn();
   const ctx: OnboardingContextValue = {
     state: INITIAL_ONBOARDING_STATE,
-    totalSteps: 7,
+    totalSteps: 4,
     next,
     back: jest.fn(),
     goToStep: jest.fn(),
@@ -36,6 +36,8 @@ function renderForm(opts: RenderOpts = {}) {
     markCompleted: jest.fn(),
     isFormSubmitting: false,
     setFormSubmitting: jest.fn(),
+    hasExistingProfile: false,
+    setExistingProfile: jest.fn(),
   };
   return {
     ...render(

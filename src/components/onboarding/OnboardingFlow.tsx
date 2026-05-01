@@ -27,18 +27,12 @@ import { Step1 } from "./steps/Step1";
 import { Step2 } from "./steps/Step2";
 import { Step3 } from "./steps/Step3";
 import { Step4 } from "./steps/Step4";
-import { Step5 } from "./steps/Step5";
-import { Step6 } from "./steps/Step6";
-import { Step7 } from "./steps/Step7";
 
 const STEP_COMPONENTS: Record<number, ComponentType> = {
   1: Step1,
   2: Step2,
   3: Step3,
   4: Step4,
-  5: Step5,
-  6: Step6,
-  7: Step7,
 };
 
 /* Container variants — passed `direction` (1 = forward, -1 = backward) so
@@ -77,6 +71,7 @@ export function OnboardingFlow() {
   const headingId = useId();
   const [direction, setDirection] = useState<1 | -1>(1);
   const [isFormSubmitting, setFormSubmitting] = useState(false);
+  const [hasExistingProfile, setExistingProfile] = useState(false);
 
   // Step 2 owns its own submit button (the UserInfoForm); the StepNavigation
   // hides Continue there to avoid two competing primary actions. Other steps
@@ -114,6 +109,8 @@ export function OnboardingFlow() {
         markCompleted,
         isFormSubmitting,
         setFormSubmitting,
+        hasExistingProfile,
+        setExistingProfile,
       }}
     >
       <section
@@ -186,8 +183,9 @@ export function OnboardingFlow() {
             primaryAction={
               isFormStep ? (
                 <motion.button
-                  type="submit"
-                  form={USER_INFO_FORM_ID}
+                  type={hasExistingProfile ? "button" : "submit"}
+                  form={hasExistingProfile ? undefined : USER_INFO_FORM_ID}
+                  onClick={hasExistingProfile ? handleNext : undefined}
                   disabled={isFormSubmitting}
                   whileHover={!isFormSubmitting ? { scale: 1.03 } : undefined}
                   whileTap={!isFormSubmitting ? { scale: 0.97 } : undefined}
@@ -216,7 +214,11 @@ export function OnboardingFlow() {
                       }}
                     />
                   ) : null}
-                  {isFormSubmitting ? "Creating profile…" : "Create profile"}
+                  {isFormSubmitting
+                    ? "Creating profile…"
+                    : hasExistingProfile
+                      ? "Continue"
+                      : "Create profile"}
                 </motion.button>
               ) : undefined
             }

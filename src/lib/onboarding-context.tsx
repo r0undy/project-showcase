@@ -25,6 +25,8 @@ export interface OnboardingContextValue {
   markCompleted: (step: number) => void;
   isFormSubmitting: boolean;
   setFormSubmitting: (value: boolean) => void;
+  hasExistingProfile: boolean;
+  setExistingProfile: (value: boolean) => void;
 }
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);

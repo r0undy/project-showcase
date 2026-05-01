@@ -326,6 +326,15 @@ body {
   }
 }
 
+@keyframes avatar-skeleton {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 /* Shooting stars — the head is a small bright dot with a magenta halo, and
  * a gradient line extending to the head's right is the trail. The whole
  * element is rotated 315° (= -45°) and translated along its rotated X axis

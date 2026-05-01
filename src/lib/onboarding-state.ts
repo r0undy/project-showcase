@@ -6,14 +6,14 @@
  * next state — no side effects, no React.
  *
  * State shape (matches `OnboardingState` in src/types/index.ts):
- *   - currentStep: 1..7 (Req 3.1)
+ *   - currentStep: 1..4 (Req 3.1)
  *   - formData: { username, awsccId } — preserved across navigation (Req 3.4)
  *   - completedSteps: Set<number> of steps marked done (Req 5.1, 5.4)
  */
 
 import type { UserFormData } from "@/types";
 
-export const TOTAL_STEPS = 7;
+export const TOTAL_STEPS = 4;
 export const MIN_STEP = 1;
 export const MAX_STEP = TOTAL_STEPS;
 

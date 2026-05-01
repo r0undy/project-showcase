@@ -196,7 +196,7 @@ graph TD
     Modal --> S4[Step4: UISetup]
     Modal --> S5[Step5: FrontendSetup]
     Modal --> S6[Step6: DeploymentSetup]
-    Modal --> S7[Step7: Complete]
+    Modal --> S4Complete[Step4: Complete]
  
     S4 --> Acc1[Accordion]
     S5 --> Acc2[Accordion]

@@ -57,7 +57,14 @@ export function UserInfoForm({
   submit,
   showSubmit = true,
 }: UserInfoFormProps = {}) {
-  const { state, next, setField, setFormSubmitting } = useOnboardingContext();
+  const {
+    state,
+    next,
+    setField,
+    setFormSubmitting,
+    setExistingProfile,
+    hasExistingProfile,
+  } = useOnboardingContext();
   const usernameId = useId();
   const awsccIdId = useId();
   const avatarId = useId();
@@ -80,16 +87,69 @@ export function UserInfoForm({
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(defaultAvatarUrl);
+  const [hasProfileAvatar, setHasProfileAvatar] = useState(false);
+  const [isAvatarLoading, setIsAvatarLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = getBrowserSupabaseClient();
+    const hasLocalProfile =
+      typeof window !== "undefined" &&
+      window.localStorage.getItem("awscc_user_created") === "true";
+
+    supabase.auth
+      .getSession()
+      .then(async ({ data }) => {
+        const session = data.session;
+        if (session || hasLocalProfile) {
+          setExistingProfile(true);
+        }
+        if (session?.user?.id) {
+          try {
+            const res = await fetch(`/api/users/${session.user.id}`, {
+              headers: { authorization: `Bearer ${session.access_token}` },
+            });
+            if (res.ok) {
+              const body = (await res.json()) as {
+                user?: {
+                  avatarUrl?: string;
+                  username?: string;
+                  awsccId?: string;
+                };
+              };
+              if (body.user?.username) {
+                form.setValues({
+                  username: body.user.username,
+                  awsccId: body.user.awsccId ?? "",
+                });
+                setField("username", body.user.username);
+                setField("awsccId", body.user.awsccId ?? "");
+              }
+              if (body.user?.avatarUrl) {
+                setAvatarPreviewUrl(body.user.avatarUrl);
+                setHasProfileAvatar(true);
+              }
+            }
+          } catch {
+            // Ignore profile fetch errors; default avatar stays.
+          }
+        }
+      })
+      .catch(() => {
+        if (hasLocalProfile) setExistingProfile(true);
+      });
+  }, [setExistingProfile]);
 
   useEffect(() => {
     if (!avatarFile) {
-      setAvatarPreviewUrl(defaultAvatarUrl);
+      if (!hasProfileAvatar) {
+        setAvatarPreviewUrl(defaultAvatarUrl);
+      }
       return;
     }
     const objectUrl = URL.createObjectURL(avatarFile);
     setAvatarPreviewUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
-  }, [avatarFile, defaultAvatarUrl]);
+  }, [avatarFile, defaultAvatarUrl, hasProfileAvatar]);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -115,6 +175,12 @@ export function UserInfoForm({
       if (uploadedAvatarUrl) {
         setField("avatarUrl", uploadedAvatarUrl);
       }
+      try {
+        window.localStorage.setItem("awscc_user_created", "true");
+      } catch {
+        // Ignore storage errors (private mode, etc.).
+      }
+      setExistingProfile(true);
       next();
     } catch (err) {
       const message =
@@ -194,13 +260,35 @@ export function UserInfoForm({
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: isSubmitting ? "not-allowed" : "pointer",
+                  position: "relative",
                 }}
               >
+                {isAvatarLoading ? (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background:
+                        "linear-gradient(120deg, color-mix(in oklab, var(--muted) 40%, transparent), color-mix(in oklab, var(--muted) 15%, transparent), color-mix(in oklab, var(--muted) 40%, transparent))",
+                      backgroundSize: "200% 100%",
+                      animation: "avatar-skeleton 1.2s ease-in-out infinite",
+                    }}
+                  />
+                ) : null}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={avatarPreviewUrl}
                   alt="Selected avatar preview"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  onLoad={() => setIsAvatarLoading(false)}
+                  onError={() => setIsAvatarLoading(false)}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    opacity: isAvatarLoading ? 0 : 1,
+                    transition: "opacity 200ms ease",
+                  }}
                 />
               </label>
               <label
@@ -255,6 +343,7 @@ export function UserInfoForm({
                   return;
                 }
                 setAvatarError(null);
+                setIsAvatarLoading(true);
                 setAvatarFile(file);
               }}
               style={{
@@ -310,7 +399,7 @@ export function UserInfoForm({
             autoComplete="off"
             spellCheck={false}
             maxLength={64}
-            disabled={isSubmitting}
+            disabled={isSubmitting || hasExistingProfile}
           />
 
           <FormRow
@@ -323,7 +412,7 @@ export function UserInfoForm({
             error={form.visibleErrors.awsccId}
             autoComplete="off"
             maxLength={64}
-            disabled={isSubmitting}
+            disabled={isSubmitting || hasExistingProfile}
           />
         </div>
       </div>

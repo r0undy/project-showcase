@@ -5,6 +5,7 @@
 This implementation plan breaks down the AWS Community Showcase feature into discrete, actionable coding tasks. The feature is a fullstack Next.js 15+ application with TypeScript, Supabase database, and a Linear.app-inspired UI. The implementation follows a bottom-up approach: database setup → API routes → UI components → integration → testing.
 
 **Technology Stack:**
+
 - Next.js 15+ with App Router
 - TypeScript 5.0+
 - Supabase (PostgreSQL + Auth)
@@ -13,11 +14,12 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
 - Framer Motion animations
 
 **Key Implementation Areas:**
+
 1. Database schema (4 tables with triggers and RLS)
 2. API Routes (6 Next.js Route Handlers)
 3. Authentication (Supabase Auth integration)
 4. Landing page with countdown timer
-5. Onboarding modal (7 steps with accordions)
+5. Onboarding modal (4 steps)
 6. Showcase page (project grid, reactions, submissions)
 7. Responsive design and animations
 8. Comprehensive testing (property-based, unit, integration, E2E)
@@ -169,26 +171,26 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
 - [x] 16. Implement Onboarding Modal structure and navigation
   - [x] 16.1 Created [src/components/onboarding/OnboardingFlow.tsx](../src/components/onboarding/OnboardingFlow.tsx) (`'use client'`). State (currentStep / formData / completedSteps) lives in [src/hooks/useOnboardingState.ts](../src/hooks/useOnboardingState.ts), which wraps the pure transitions in [src/lib/onboarding-state.ts](../src/lib/onboarding-state.ts) — so navigation logic is testable without rendering. Step transitions use `AnimatePresence mode="wait"` keyed on `currentStep` with slide + fade. **Onboarding is now a page route at `/welcome`** rather than a modal — see design.md Note 5 and the 2026-05-01 decisions log entry. The CTA on the landing page calls `router.push('/welcome')`.
     - _Requirements: 3.1, 3.4, 16.1, 16.2, 16.3_
-  - [x] 16.2 Created [src/components/onboarding/StepNavigation.tsx](../src/components/onboarding/StepNavigation.tsx) — Next/Back buttons + "STEP N OF 7" indicator + 7 clickable dot tabs (`role="tab"`) for direct any-to-any navigation. Next is disabled when `canProceed` is false OR the user is on the last step (label flips to "Finish"). Back is disabled on step 1. Dots show three states: active (purple, magenta glow), completed (magenta accent), inactive (muted).
+  - [x] 16.2 Created [src/components/onboarding/StepNavigation.tsx](../src/components/onboarding/StepNavigation.tsx) — Next/Back buttons + "STEP N OF 4" indicator + 4 clickable dot tabs (`role="tab"`) for direct any-to-any navigation. Next is disabled when `canProceed` is false OR the user is on the last step (label flips to "Finish"). Back is disabled on step 1. Dots show three states: active (purple, magenta glow), completed (magenta accent), inactive (muted).
     - _Requirements: 3.2, 3.3, 3.5, 16.3_
   - [x] 16.3 Property 2 (navigation consistency) — [tests/properties/navigation.property.test.ts](../tests/properties/navigation.property.test.ts). 3 sub-properties × 50–200 runs: any-to-any goToStep succeeds; completion state never blocks navigation; next/back are clamped at 1 and 7. **Verified passing** (~0.1s, no DB).
     - _Validates: Req 3.3, 5.5_
   - [x] 16.4 Property 3 (form data preservation) — same file. 2 sub-properties: any sequence of next/back/goToStep preserves formData; setFormField on one field never disturbs the other. 200 runs each.
     - _Validates: Req 3.4_
-  - [x] 16.5 Property 4 (step indicator accuracy) — same file. 2 sub-properties: currentStep stays in [1, 7] after any sequence including out-of-range goto attempts; the formatted indicator string matches the current step exactly. Up to 200 runs.
+  - [x] 16.5 Property 4 (step indicator accuracy) — same file. 2 sub-properties: currentStep stays in [1, 4] after any sequence including out-of-range goto attempts; the formatted indicator string matches the current step exactly. Up to 200 runs.
     - _Validates: Req 3.5_
-  - [x] 16.6 Unit tests — [tests/unit/components/OnboardingFlow.test.tsx](../tests/unit/components/OnboardingFlow.test.tsx). 7 cases: opens on step 1 with right indicator, Continue advances all 6 transitions, Back returns one step, dot click jumps directly to step 5, Back disabled on step 1, button label "Finish" + disabled on step 7, region is labeled for screen readers. **All passing.** (Modal-only assertions — Esc/X-button/backdrop/isOpen — were dropped when the modal became a page route.)
+  - [x] 16.6 Unit tests — [tests/unit/components/OnboardingFlow.test.tsx](../tests/unit/components/OnboardingFlow.test.tsx). 7 cases: opens on step 1 with right indicator, Continue advances all transitions, Back returns one step, dot click jumps directly to step 4, Back disabled on step 1, button label "Finish" + disabled on step 4, region is labeled for screen readers. **All passing.** (Modal-only assertions — Esc/X-button/backdrop/isOpen — were dropped when the modal became a page route.)
 
 - [x] 16.7 Placeholder step components for Tasks 17/18/20 to fill in
   - [src/components/onboarding/steps/StepShell.tsx](../src/components/onboarding/steps/StepShell.tsx) — shared layout (eyebrow + heading + lede + content slot)
-  - [Step1.tsx](../src/components/onboarding/steps/Step1.tsx) (Welcome), [Step3.tsx](../src/components/onboarding/steps/Step3.tsx) (Info), [Step7.tsx](../src/components/onboarding/steps/Step7.tsx) (Completion) — placeholder copy for Task 17 to flesh out
+  - [Step1.tsx](../src/components/onboarding/steps/Step1.tsx) (Welcome), [Step3.tsx](../src/components/onboarding/steps/Step3.tsx) (Info), [Step4.tsx](../src/components/onboarding/steps/Step4.tsx) (Completion) — placeholder copy for Task 17 to flesh out
   - [Step2.tsx](../src/components/onboarding/steps/Step2.tsx) — placeholder for the UserInfoForm in Task 18
-  - [Step4.tsx](../src/components/onboarding/steps/Step4.tsx) / [Step5.tsx](../src/components/onboarding/steps/Step5.tsx) / [Step6.tsx](../src/components/onboarding/steps/Step6.tsx) — placeholders for the accordion setup steps in Task 20
+  - [Step4.tsx](../src/components/onboarding/steps/Step4.tsx) / [Step5.tsx](../src/components/onboarding/steps/Step5.tsx) / [Step6.tsx](../src/components/onboarding/steps/Step6.tsx) — placeholders for the accordion setup steps in Task 20 (now removed from the flow)
 
 - [x] 17. Implement Onboarding Modal steps 1, 3, 7 (non-form steps)
   - [x] [Step1.tsx](../src/components/onboarding/steps/Step1.tsx) — Welcome screen. Title "Ready to build, deploy, and showcase?" + lede + 3-card highlight grid (`Users` / `Sparkles` / `Rocket` icons from lucide) covering "Claim your profile", "Build the essentials", "Ship it with AWS". Each highlight uses inline padding via `clamp(1.25rem, 3vw, 1.75rem)` per the 2026-05-01 padding decision; the icon halo uses a gradient + magenta box-shadow glow. Closes with a "Takes about 10 minutes" hint.
   - [x] [Step3.tsx](../src/components/onboarding/steps/Step3.tsx) — Information screen. "Here's what you'll need" checklist of four items (AWS account, GitHub via lucide `GitBranch`, Node.js 20+, ~30 minutes). 2-column grid on desktop, stacks on mobile. Each item uses inline padding `clamp(1rem, 2.5vw, 1.25rem)` and an inset-shadow magenta hairline on the icon disc.
-  - [x] [Step7.tsx](../src/components/onboarding/steps/Step7.tsx) — Completion screen. Title "You're cleared for launch." with primary `<Link href="/showcase">` CTA (will land in Task 22; currently 404s if hit) styled as a gradient pill with `Sparkles` + `ArrowRight` icons (the arrow translates on hover). Secondary "Back to home" text link. Tip about session persistence in localStorage.
+  - [x] [Step4.tsx](../src/components/onboarding/steps/Step4.tsx) — Completion screen. Title "You're cleared for launch." with primary `<Link href="/deploy-steps">` CTA styled as a gradient pill with `Sparkles` + `ArrowRight` icons (the arrow translates on hover). Secondary "Back to home" text link. Tip about session persistence in localStorage.
   - **Padding convention:** all the new steps use **inline `style` for `padding`/`paddingInline`/`paddingBlock`/`gap`** instead of Tailwind `p-X` / `px-X` / `gap-X` classes. See the 2026-05-01 decision below — the user reported recurring visual-density issues with Tailwind padding classes despite the CSS resolving correctly, and the fix is to use inline styles for layout-critical whitespace going forward.
   - **Compact-on-mobile + pinned stepper:** [StepShell](../src/components/onboarding/steps/StepShell.tsx) heading switched to inline `fontSize: clamp(1.25rem, 3.5vw + 0.25rem, 2.25rem)` so it scales smoothly mobile→desktop without breakpoint-specific Tailwind sizes. Step 1/3 list cards use tighter `clamp()` padding + 1.75rem icon halos. [OnboardingFlow](../src/components/onboarding/OnboardingFlow.tsx) is now a `flex: 1` column where the **step viewport takes `flex: 1` (with `overflowY: auto` + `justifyContent: center`) and the StepNavigation has `flexShrink: 0`** — the stepper stays pinned at the bottom of the section regardless of step content height (no more "pushed down" behavior on tall content). Long content scrolls inside the viewport instead of pushing the nav out of view.
   - **Note:** the `lucide-react` package doesn't ship a GitHub-branded icon. `GitBranch` stands in.
@@ -200,25 +202,25 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
     2. `fetch('/api/users', { Authorization: 'Bearer <token>' })`.
     3. On success → mirror `username` / `awsccId` into onboarding context state, then `next()`.
     4. On any failure after sign-in → `auth.signOut()` so retries don't leak orphaned `auth.users` rows. Inline error message rendered above the submit button.
-    Loading state: button shows a spinner + "Creating profile…" + `disabled`. Helper text under each input explains the validation rule.
-    Plumbing: a new [src/lib/onboarding-context.tsx](../src/lib/onboarding-context.tsx) (React context) gives Step 2 access to `next`, `state.formData`, `setField` without prop-drilling through the AnimatePresence layer. [OnboardingFlow](../src/components/onboarding/OnboardingFlow.tsx) wraps the steps in `<OnboardingProvider>` and **hides the StepNavigation Continue button on Step 2** via a new `hideNext` prop on [StepNavigation](../src/components/onboarding/StepNavigation.tsx) (the form provides its own submit, so two competing primary actions would be confusing). Wired into [steps/Step2.tsx](../src/components/onboarding/steps/Step2.tsx).
-    Spinner uses a new `@keyframes cosmic-spin` rule in [globals.css](../src/app/globals.css). Padding/gap throughout follow the inline-style convention.
+       Loading state: button shows a spinner + "Creating profile…" + `disabled`. Helper text under each input explains the validation rule.
+       Plumbing: a new [src/lib/onboarding-context.tsx](../src/lib/onboarding-context.tsx) (React context) gives Step 2 access to `next`, `state.formData`, `setField` without prop-drilling through the AnimatePresence layer. [OnboardingFlow](../src/components/onboarding/OnboardingFlow.tsx) wraps the steps in `<OnboardingProvider>` and **hides the StepNavigation Continue button on Step 2** via a new `hideNext` prop on [StepNavigation](../src/components/onboarding/StepNavigation.tsx) (the form provides its own submit, so two competing primary actions would be confusing). Wired into [steps/Step2.tsx](../src/components/onboarding/steps/Step2.tsx).
+       Spinner uses a new `@keyframes cosmic-spin` rule in [globals.css](../src/app/globals.css). Padding/gap throughout follow the inline-style convention.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 18.2_
 
   - [x] 18.2 Property 18 (validation error inline display) — [tests/properties/validation-display.property.test.ts](../tests/properties/validation-display.property.test.ts). 4 sub-properties × 200 runs each: after submit every error is visible; touched + invalid → error visible; untouched + pre-submit → never visible; valid input → never produces a visible error regardless of touched/submitted state. **Verified passing.**
     - _Validates: Req 18.2_
 
   - [x] 18.3 Unit tests — [tests/unit/components/UserInfoForm.test.tsx](../tests/unit/components/UserInfoForm.test.tsx). 7 cases: renders both fields with helper + submit button; inline error after blur on invalid username; no errors before touch; submit attempt with empty fields reveals all errors AND blocks submit; valid input calls `submit + setField + next`; spinner + "Creating profile…" disabled state during pending submit; submit error message surfaces and prevents `next()`. The submit boundary is overridden via the `submit` prop in tests so we don't need to mock the Supabase client or `fetch`. **All 7 passing.**
-    Also added a regression test in [OnboardingFlow.test.tsx](../tests/unit/components/OnboardingFlow.test.tsx) confirming Continue is hidden on step 2 and Create profile is shown instead. The "Continue advances steps" test now jumps past step 2 via the indicator dot (since Continue is unavailable there).
+        Also added a regression test in [OnboardingFlow.test.tsx](../tests/unit/components/OnboardingFlow.test.tsx) confirming Continue is hidden on step 2 and Create profile is shown instead. The "Continue advances steps" test now jumps past step 2 via the indicator dot (since Continue is unavailable there).
 
-- [ ] 19. Implement Accordion component for setup steps
+- [ ] 19. Implement Accordion component for setup steps (removed from onboarding flow)
   - Create Accordion client component with expand/collapse functionality
   - Support multiple sections open simultaneously
   - Add smooth expand/collapse animations with Framer Motion
   - Style according to design system
   - _Requirements: 6.4, 6.5, 16.1, 17.2_
 
-- [ ] 20. Implement Onboarding Modal Steps 4, 5, 6 (Setup Steps with Accordions)
+- [ ] 20. Implement Onboarding Modal Steps 4, 5, 6 (Setup Steps with Accordions) (removed from onboarding flow)
   - [ ] 20.1 Create SetupStep component wrapper with "Mark as Done" functionality
     - Implement SetupStep component with accordion sections
     - Add "Mark as Done" checkbox/button
@@ -422,7 +424,7 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
 - [ ] 32. Security hardening
   - Audit all API routes for authentication checks
   - Implement rate limiting on API routes
-  - Ensure environment variables are properly scoped (NEXT_PUBLIC_ prefix)
+  - Ensure environment variables are properly scoped (NEXT*PUBLIC* prefix)
   - Verify input sanitization on all user inputs
   - Test CSRF protection on API routes
   - Ensure service role key is never exposed to client
@@ -430,7 +432,7 @@ This implementation plan breaks down the AWS Community Showcase feature into dis
 
 - [ ] 33. End-to-end testing
   - [ ] 33.1 Write E2E test for complete onboarding flow
-    - Test landing page → click "Get Started" → complete all 7 steps → reach showcase
+    - Test landing page → click "Get Started" → complete all 4 steps → reach deploy steps
     - Test user information submission
     - Test marking setup steps as complete
     - Test session persistence after onboarding
@@ -502,7 +504,7 @@ A running log of implementation choices that diverge from or extend `design.md`.
 - **2026-05-01 — Spec folder moved from `.kiro/specs/aws-community-showcase/` to project-root `aws-community-showcase/`.** User-initiated. No design impact; just a path change. Memory note + `MEMORY.md` updated to reference the new path.
 - **2026-05-01 — MagicUI installed via shadcn CLI, not as a single npm package.** MagicUI publishes per-component registry URLs consumed by `shadcn add`. We ran `npx shadcn@latest init --defaults` (created `components.json`, `src/lib/utils.ts`, `src/components/ui/button.tsx`) and verified end-to-end with `npx shadcn@latest add https://magicui.design/r/blur-fade.json` (`src/components/ui/blur-fade.tsx`). Adds deps: `clsx`, `tailwind-merge`, `class-variance-authority`, `lucide-react`, `motion`, `tw-animate-css`, `@base-ui/react`, `shadcn`. Fulfills Req 20.7.
 - **2026-05-01 — Linear.app palette migrated from `tailwind.config.ts` `extend.colors` to CSS custom properties in `src/app/globals.css`.** Tailwind v4's `@theme inline` block in CSS supersedes the JS config, so the JS `extend.colors` block was effectively dead. Now `--primary: #5E6AD2` etc. drive both shadcn tokens and Tailwind utilities. Follow-up: prune the dead block in `tailwind.config.ts`.
-- **2026-05-01 — Inline `style` for all layout-critical padding/gap, not Tailwind `p-*` / `gap-*`.** Recurring issue across the build: the user reports paddings "don't work" even though the served CSS resolves correctly (`.px-N { padding-inline: calc(var(--spacing) * N) }` with `--spacing: 0.25rem` set on `:root`). The visual density of Tailwind's `p-N` scale doesn't match what the user expects, and bumping up + down via class names produced no visible change between iterations. Switching to inline `style={{ padding: ... }}` (often with `clamp(min, vw-fn, max)` for responsive scaling) makes the value explicit, bypasses any class-cascade weirdness, and let the user see the change land. Convention going forward: **use inline `style` for `padding`, `paddingInline`, `paddingBlock`, `gap`, `rowGap`, `columnGap`, `minWidth`, `minHeight` on layout-critical elements (cards, buttons, modals).** Color, typography, layout role, and other non-spacing concerns continue to use Tailwind classes. Applied retroactively to: CTAButton, CountdownTimer cells, OnboardingFlow modal panel (now removed), Step1 highlight cards, Step3 checklist items, Step7 CTA button, WelcomeClient "Back to home" link.
+- **2026-05-01 — Inline `style` for all layout-critical padding/gap, not Tailwind `p-*` / `gap-*`.** Recurring issue across the build: the user reports paddings "don't work" even though the served CSS resolves correctly (`.px-N { padding-inline: calc(var(--spacing) * N) }` with `--spacing: 0.25rem` set on `:root`). The visual density of Tailwind's `p-N` scale doesn't match what the user expects, and bumping up + down via class names produced no visible change between iterations. Switching to inline `style={{ padding: ... }}` (often with `clamp(min, vw-fn, max)` for responsive scaling) makes the value explicit, bypasses any class-cascade weirdness, and let the user see the change land. Convention going forward: **use inline `style` for `padding`, `paddingInline`, `paddingBlock`, `gap`, `rowGap`, `columnGap`, `minWidth`, `minHeight` on layout-critical elements (cards, buttons, modals).** Color, typography, layout role, and other non-spacing concerns continue to use Tailwind classes. Applied retroactively to: CTAButton, CountdownTimer cells, OnboardingFlow modal panel (now removed), Step1 highlight cards, Step3 checklist items, Step4 CTA button, WelcomeClient "Back to home" link.
 - **2026-05-01 — Onboarding became a page route (`/welcome`) instead of a modal.** The requirements call it `Onboarding_Modal` throughout, but a route is shareable, back-navigable, and survives refresh (localStorage already preserves the auth session per the anonymous-auth decision; only the in-progress step number is lost on refresh, which is fine). The 7-step flow itself is unchanged — same step components, same `useOnboardingState`, same property tests for navigation/form-preservation/indicator. The CTA on `/` now calls `router.push('/welcome')`. New files: [src/app/welcome/page.tsx](../src/app/welcome/page.tsx), [src/app/welcome/WelcomeClient.tsx](../src/app/welcome/WelcomeClient.tsx), [src/components/onboarding/OnboardingFlow.tsx](../src/components/onboarding/OnboardingFlow.tsx). Removed: `src/components/onboarding/OnboardingModal.tsx` and `tests/unit/components/OnboardingModal.test.tsx`. The modal-only test cases (Esc to close, X button, backdrop click, isOpen=false hides) were dropped — replaced with one new test asserting the labeled `<section role="region">`.
 - **2026-05-01 — Poster fidelity pass + custom cursor + shooting stars.** Pulled in the actual poster copy (eyebrow `FROM VIBE TO LIVE:`, headline `Deploying your portfolio with AWS`, event details `May 2, 2026 · 1:00 PM – 6:00 PM · White Cloak Technologies, Pasig City`). Loaded **Bungee** as the display font via `next/font/google` and wired it to `--font-display` / `font-display` Tailwind utility through `@theme inline`. Headline uses a vertical white→magenta `bg-clip-text` with a magenta `WebkitTextStroke` for the poster's outlined look + a subtle 4s `cosmic-glow-pulse` drop-shadow loop. Added 5 `.cosmic-shooting-star` instances (CSS `linear-gradient` + 6s diagonal animation, randomized delay/duration). New `<CustomCursor />` in `src/components/cursor/CustomCursor.tsx` mounted in root layout: pointer-fine only, two-layer (sharp dot + lerping halo), grows on `[role="button"]` / `<a>` hover, honors `prefers-reduced-motion`, hides native cursor via `html.cosmic-cursor *` rule.
 - **2026-05-01 — Theme rebrand: Linear.app → Cosmic ("From Vibe to Live").** User shared the event poster (deep purple + magenta glow) and a richer Figma file (`KQ5EAw4koMfow6jzJCHdDQ`, node 16:6) with the actual portfolio design. Pulled exact tokens via `mcp__plugin_figma_figma__get_design_context`. Replaced the Linear.app palette with: `--background: #0a0518`, `--card: #1a0b2e`, `--secondary: #2c1250`, `--primary: #a855f7`, `--accent: #ec4899`, plus `--glow-magenta/violet/deep` for decorations. Added pure-CSS decorative utilities (`.cosmic-bg`, `.cosmic-stars`, `.cosmic-planet`, `.cosmic-float`) — no image assets. See design.md Note 4 for the full token table. Tailwind v4 canonical class fixes applied (`bg-linear-to-r` not `bg-gradient-to-r`, bare token names like `via-primary` instead of `via-(--primary)` for tokens registered in `@theme`).

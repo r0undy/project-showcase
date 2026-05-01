@@ -43,11 +43,11 @@ Before the workshop begins, your Instructor Lead will send your AWS credentials 
 
 Your CSV contains three pieces of information:
 
-| Field | What it's for |
-|-------|---------------|
-| **User name** | Your unique IAM username (e.g., `david-batobato`). Your bucket names must start with this. |
-| **Password** | A temporary password used for your first sign-in. You'll be asked to change it immediately. |
-| **Console login link** | Direct URL to sign in. Bookmark this — it's faster than searching. |
+| Field                  | What it's for                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| **User name**          | Your unique IAM username (e.g., `david-batobato`). Your bucket names must start with this.  |
+| **Password**           | A temporary password used for your first sign-in. You'll be asked to change it immediately. |
+| **Console login link** | Direct URL to sign in. Bookmark this — it's faster than searching.                          |
 
 ## Step 1.1 — Sign In to AWS
 
@@ -112,12 +112,14 @@ Click the orange **Create bucket** button at the top right.
 <img width="500" alt="Create bucket button" src="https://github.com/user-attachments/assets/2a63c97a-5071-4202-b689-f8d713581fcd" />
 
 > ⚠️ **CRITICAL — Bucket naming:** Your bucket name MUST start with your username and contain only lowercase letters, numbers, and hyphens.
->  
+>
 > **Examples (if your username is `david-batobato`):**
+>
 > - `david-batobato-portfolio` ✅
 > - `david-batobato-myapp` ✅
 >
 > **These will NOT work:** - because in this workshop for better visibility we enforce this rule, in a typical S3 this is allowed depending on the policy
+>
 > - `portfolio` — doesn't start with your username ❌
 > - `David-Batobato-Portfolio` — uppercase letters ❌
 > - `someoneelse-portfolio` — different username ❌
@@ -135,7 +137,7 @@ Scroll down to "Block Public Access settings for this bucket":
 
 1. **UNCHECK** "Block all public access"
 2. All four sub-checkboxes will uncheck automatically
-3. **CHECK** the acknowledgment box at the bottom: *"I acknowledge that the current settings might result in this bucket and the objects within becoming public"*
+3. **CHECK** the acknowledgment box at the bottom: _"I acknowledge that the current settings might result in this bucket and the objects within becoming public"_
 
 <img width="500" alt="Block Public Access settings" src="https://github.com/user-attachments/assets/ceba5b26-9ed5-4f79-9b6f-102266f4455a" />
 
@@ -236,7 +238,6 @@ If you visit your URL right now, you'll get a 403 Forbidden error. Your files ar
 
 <img width="500" alt="Bucket policy section" src="https://github.com/user-attachments/assets/30189485-a156-4915-b533-756c33450840" />
 
-
 ### Paste this policy
 
 > ⚠️ **IMPORTANT:** REPLACE `<YOUR-BUCKET-NAME>` with your actual bucket name (e.g., `david-batobato-portfolio`) in the policy below.
@@ -327,12 +328,12 @@ Your portfolio is live, but the URL says "Not secure" because S3 website hosting
 
 <img width="500" alt="Create distribution button" src="https://github.com/user-attachments/assets/7da82ac4-539a-44c7-b2f2-250f438f419b" />
 
-
 ## Step 3.2 — Choose Pay-as-you-go (CRITICAL!)
 
 You'll see a "Choose a plan" screen with several options: Free, Pro ($15/month), Business ($200/month), and Premium ($1,000/month).
 
 > ⛔ **DO NOT DO THIS:**
+>
 > - DO NOT click any of the cards: **Free, Pro, Business, or Premium**.
 > - These plans cost money or have limits that will block you.
 > - **If you accidentally click one and try to create:** Click Cancel and start over.
@@ -344,7 +345,6 @@ You'll see a "Choose a plan" screen with several options: Free, Pro ($15/month),
 3. Click **Next**.
 
 <img width="500" alt="Pay as you go option" src="https://github.com/user-attachments/assets/61bbae35-6f09-4c9b-8ae7-94bad464567e" />
-
 
 > ⚠️ **IMPORTANT:** If you don't see "Pay as you go" at the bottom, scroll further. It's below all the plan cards. The "Pro" plan is highlighted by AWS as a default — don't accept that default.
 
@@ -398,7 +398,7 @@ This tells CloudFront which S3 bucket to serve content from.
    ```
 3. A **YELLOW WARNING BOX** will appear that says:
 
-   > 💡 *"This S3 bucket has static web hosting enabled. If you plan to use this distribution as a website, we recommend using the S3 website endpoint rather than the bucket endpoint."*
+   > 💡 _"This S3 bucket has static web hosting enabled. If you plan to use this distribution as a website, we recommend using the S3 website endpoint rather than the bucket endpoint."_
 
 4. Click the **"Use website endpoint"** button in that warning. The field will update to:
    ```
@@ -406,7 +406,6 @@ This tells CloudFront which S3 bucket to serve content from.
    ```
 
 > ⚠️ **IMPORTANT:** This step is critical. The "website endpoint" (with `-website-`) is different from the regular S3 endpoint. Using the wrong one will break your site.
-
 
 ### Origin path
 
@@ -426,10 +425,10 @@ When done, click **Next**.
 
 ## Step 3.5 — Enable Security (Say NO to WAF)
 
-
 This page asks if you want to enable AWS WAF (Web Application Firewall).
 
 > ⛔ **DO NOT DO THIS:**
+>
 > - WAF costs money — about **$14/month** for 10 million requests.
 > - We do NOT need WAF for a portfolio site. It's overkill for static content.
 > - **DO NOT click "Enable security protections".**
@@ -456,6 +455,7 @@ This is the final step. Verify EVERYTHING before clicking Create.
 - **Use existing WAF configuration:** No
 
 > ⛔ **DO NOT DO THIS:**
+>
 > - If the Billing line shows "$15/month", "$2 today's pro-rated charge", or any plan name (Pro, Business, etc.) — **STOP!** Click Previous and select Pay-as-you-go instead.
 > - Do NOT click Create distribution if you see any charges.
 
@@ -467,13 +467,11 @@ Once verified, click the orange **Create distribution** button.
 
 <img width="500" alt="Distribution created" src="https://github.com/user-attachments/assets/7e41687e-8c8a-43ef-a506-a86d22f95c26" />
 
-
 ## Step 3.7 — Set the Default Root Object
 
 Right after creation, we need to tell CloudFront what to serve when someone visits the bare URL (e.g., `dXXXXX.cloudfront.net`).
 
 <img width="500" alt="Distribution detail page" src="https://github.com/user-attachments/assets/15c80dbf-8b81-45f6-b257-cd9e9d8fe42a" />
-
 
 1. On your distribution detail page, scroll to the **Settings** section.
 2. Notice that **Default root object** is empty (shows a dash).
@@ -483,7 +481,6 @@ Right after creation, we need to tell CloudFront what to serve when someone visi
    <img width="500" alt="Default root object field" src="https://github.com/user-attachments/assets/86ef7718-bfe5-4c2a-a376-a85ec5553872" />
 
 5. Scroll down and click **Save changes**.
-
 
 ## Step 3.8 — Wait for Deployment ⏳
 
@@ -495,6 +492,7 @@ CloudFront is now pushing your distribution config to 750+ edge locations worldw
 - **Status: Last modified [date]** with green check → Done!
 
 > 💡 **TIP:** While you wait, you can:
+>
 > - ask questions, network
 > - Help a dev with their setup
 > - Find your love one 😉
@@ -508,7 +506,6 @@ https://<YOUR-DISTRIBUTION-ID>.cloudfront.net
 ```
 
 <img width="500" alt="HTTPS site live" src="https://github.com/user-attachments/assets/322bd03e-a814-41f2-bde7-22e8fdaa2565" />
-
 
 Notice it says **HTTPS** — and your browser shows a green padlock!
 
@@ -561,13 +558,14 @@ Take a screenshot of your live HTTPS portfolio and share it in our workshop chat
 
 Now you can confidently say:
 
-> 📝 **RESUME-WORTHY:** *"Deployed a production website to AWS using S3 for static hosting and CloudFront for HTTPS content delivery."*
+> 📝 **RESUME-WORTHY:** _"Deployed a production website to AWS using S3 for static hosting and CloudFront for HTTPS content delivery."_
 
 ## What Happens Next
 
 > ⚠️ **IMPORTANT:** Your AWS workshop credentials will be revoked after a week of the workshop ending. Your S3 buckets and CloudFront distribution will also be cleaned up.
 >
 > If you want to keep deploying to AWS:
+>
 > 1. Create your own free AWS account at aws.amazon.com (you'll get $100 in credits, 🤯)
 > 2. Recreate the same setup using your own account
 > 3. Or use Vercel, Netlify, or Cloudflare Pages for simpler hosting, but of course to stand out we need to learn these kind on infra level setup 🫡
