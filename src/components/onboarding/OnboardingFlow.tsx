@@ -19,6 +19,8 @@
 
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import { useId, useMemo, useState, type ComponentType } from "react";
+import Link from "next/link";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useOnboardingState } from "@/hooks/useOnboardingState";
 import { OnboardingProvider } from "@/lib/onboarding-context";
 import { StepNavigation } from "./StepNavigation";
@@ -78,6 +80,7 @@ export function OnboardingFlow() {
   // can always advance via Continue.
   const isFormStep = state.currentStep === 2;
   const canProceed = !isFormStep;
+  const isLastStep = state.currentStep === totalSteps;
 
   const StepComponent = useMemo(
     () => STEP_COMPONENTS[state.currentStep] ?? Step1,
@@ -181,7 +184,25 @@ export function OnboardingFlow() {
             completedSteps={state.completedSteps}
             hideNext={isFormStep}
             primaryAction={
-              isFormStep ? (
+              isLastStep ? (
+                <Link
+                  href="/deploy-to-aws"
+                  className="group inline-flex items-center gap-2 rounded-full bg-linear-to-r from-primary to-accent text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  style={{
+                    paddingInline: "2rem",
+                    height: "2.5rem",
+                    boxShadow:
+                      "0 0 24px -4px color-mix(in oklab, var(--glow-magenta) 60%, transparent)",
+                  }}
+                >
+                  <Sparkles className="size-4" aria-hidden="true" />
+                  Go to deploy steps
+                  <ArrowRight
+                    className="size-4 transition-transform group-hover:translate-x-0.5"
+                    aria-hidden="true"
+                  />
+                </Link>
+              ) : isFormStep ? (
                 <motion.button
                   type={hasExistingProfile ? "button" : "submit"}
                   form={hasExistingProfile ? undefined : USER_INFO_FORM_ID}

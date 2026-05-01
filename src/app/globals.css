@@ -76,6 +76,12 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans);
   line-height: 1.5;
+  /* Clip horizontal overflow at the document level (prevents the
+   * `.cosmic-horizon` ellipse + corner glows — both wider than the viewport
+   * — from creating a horizontal scrollbar). `overflow-x: clip` constrains
+   * layout WITHOUT forming a scroll container, so vertical `position: sticky`
+   * descendants (e.g. the QuickNav on /deploy-to-aws/[part]) keep working. */
+  overflow-x: clip;
 }
 
 /* Hide scrollbars while preserving scroll behavior. */
@@ -124,7 +130,13 @@ body {
       color-mix(in oklab, var(--glow-magenta) 22%, transparent),
       transparent 60%
     );
-  overflow: hidden;
+  /* Clip the corner glows / horizon pseudo-elements WITHOUT establishing
+   * a scroll container — `overflow: hidden` (and even `overflow: clip` in
+   * some Chromium versions) silently breaks `position: sticky` descendants
+   * (e.g. the QuickNav on /deploy-to-aws/[part]). Per the CSS spec,
+   * `clip-path` clips paint but never forms a scroll container, so sticky
+   * descendants still anchor to the document/window scroll. */
+  clip-path: inset(0);
 }
 
 .cosmic-bg::before,
