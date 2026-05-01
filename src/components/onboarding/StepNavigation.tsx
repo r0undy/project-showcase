@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * StepNavigation — Next/Back buttons + clickable step indicator.
@@ -15,8 +15,8 @@
  *   - Buttons use spring whileHover / whileTap for a tactile feel.
  */
 
-import { AnimatePresence, motion } from 'motion/react';
-import type { ReactNode } from 'react';
+import { AnimatePresence, motion } from "motion/react";
+import type { ReactNode } from "react";
 
 interface StepNavigationProps {
   currentStep: number;
@@ -91,7 +91,7 @@ export function StepNavigation({
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                aria-label={`Go to step ${step}${isDone ? ' (completed)' : ''}`}
+                aria-label={`Go to step ${step}${isDone ? " (completed)" : ""}`}
                 onClick={() => onStepClick(step)}
                 className="relative flex size-7 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
@@ -101,13 +101,13 @@ export function StepNavigation({
                     width: isActive ? 14 : 8,
                     height: isActive ? 14 : 8,
                     backgroundColor: isActive
-                      ? 'var(--primary)'
+                      ? "var(--primary)"
                       : isDone
-                        ? 'color-mix(in oklab, var(--accent) 80%, transparent)'
-                        : 'color-mix(in oklab, var(--muted-foreground) 50%, transparent)',
+                        ? "color-mix(in oklab, var(--accent) 80%, transparent)"
+                        : "color-mix(in oklab, var(--muted-foreground) 50%, transparent)",
                     boxShadow: isActive
-                      ? '0 0 14px color-mix(in oklab, var(--glow-magenta) 70%, transparent)'
-                      : '0 0 0 0 transparent',
+                      ? "0 0 14px color-mix(in oklab, var(--glow-magenta) 70%, transparent)"
+                      : "0 0 0 0 transparent",
                   }}
                   transition={{ duration: 0.35, ease: easeOut }}
                 />
@@ -125,34 +125,35 @@ export function StepNavigation({
           disabled={isFirst}
           whileHover={!isFirst ? { scale: 1.03 } : undefined}
           whileTap={!isFirst ? { scale: 0.97 } : undefined}
-          transition={{ type: 'spring', stiffness: 380, damping: 22 }}
-          style={{ paddingInline: '1.5rem', height: '2.5rem' }}
+          transition={{ type: "spring", stiffness: 380, damping: 22 }}
+          style={{ paddingInline: "1.5rem", height: "2.5rem" }}
           className="inline-flex items-center rounded-full border border-border bg-card/40 text-sm font-medium text-foreground transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40"
         >
           Back
         </motion.button>
 
-        {primaryAction ?? (!hideNext && (
-          <motion.button
-            type="button"
-            onClick={onNext}
-            disabled={!canProceed || isLast}
-            whileHover={canProceed && !isLast ? { scale: 1.03 } : undefined}
-            whileTap={canProceed && !isLast ? { scale: 0.97 } : undefined}
-            transition={{ type: 'spring', stiffness: 380, damping: 22 }}
-            style={{
-              paddingInline: '2rem',
-              height: '2.5rem',
-              boxShadow:
-                canProceed && !isLast
-                  ? '0 0 24px -4px color-mix(in oklab, var(--glow-magenta) 60%, transparent)'
-                  : undefined,
-            }}
-            className="inline-flex items-center rounded-full bg-linear-to-r from-primary to-accent text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40"
-          >
-            {nextLabel ?? (isLast ? 'Finish' : 'Continue')}
-          </motion.button>
-        ))}
+        {primaryAction ??
+          (!hideNext && (
+            <motion.button
+              type="button"
+              onClick={onNext}
+              disabled={!canProceed || isLast}
+              whileHover={canProceed && !isLast ? { scale: 1.03 } : undefined}
+              whileTap={canProceed && !isLast ? { scale: 0.97 } : undefined}
+              transition={{ type: "spring", stiffness: 380, damping: 22 }}
+              style={{
+                paddingInline: "2rem",
+                height: "2.5rem",
+                boxShadow:
+                  canProceed && !isLast
+                    ? "0 0 24px -4px color-mix(in oklab, var(--glow-magenta) 60%, transparent)"
+                    : undefined,
+              }}
+              className="inline-flex items-center rounded-full bg-linear-to-r from-primary to-accent text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-40"
+            >
+              {nextLabel ?? (isLast ? "Finish" : "Continue")}
+            </motion.button>
+          ))}
       </div>
     </motion.div>
   );

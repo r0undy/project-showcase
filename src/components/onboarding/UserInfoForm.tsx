@@ -53,7 +53,10 @@ const itemVariants = {
   exit: { y: -8, opacity: 0, filter: "blur(4px)" },
 };
 
-export function UserInfoForm({ submit, showSubmit = true }: UserInfoFormProps = {}) {
+export function UserInfoForm({
+  submit,
+  showSubmit = true,
+}: UserInfoFormProps = {}) {
   const { state, next, setField, setFormSubmitting } = useOnboardingContext();
   const usernameId = useId();
   const awsccIdId = useId();

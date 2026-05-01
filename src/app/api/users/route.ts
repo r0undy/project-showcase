@@ -46,7 +46,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     awsccId?: unknown;
     avatarUrl?: unknown;
   };
-  const normalizedAwsccId = typeof awsccId === "string" ? awsccId.trim() : awsccId;
+  const normalizedAwsccId =
+    typeof awsccId === "string" ? awsccId.trim() : awsccId;
   const errors = validateUserForm({
     username,
     awsccId: normalizedAwsccId,

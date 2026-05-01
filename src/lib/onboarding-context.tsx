@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Onboarding context — gives step components access to the navigation +
@@ -8,9 +8,9 @@
  * which needs `next()` to advance after the form submits successfully).
  */
 
-import { createContext, useContext, type ReactNode } from 'react';
-import type { OnboardingState } from '@/lib/onboarding-state';
-import type { UserFormData } from '@/types';
+import { createContext, useContext, type ReactNode } from "react";
+import type { OnboardingState } from "@/lib/onboarding-state";
+import type { UserFormData } from "@/types";
 
 export interface OnboardingContextValue {
   state: OnboardingState;
@@ -18,7 +18,10 @@ export interface OnboardingContextValue {
   next: () => void;
   back: () => void;
   goToStep: (step: number) => void;
-  setField: <K extends keyof UserFormData>(field: K, value: UserFormData[K]) => void;
+  setField: <K extends keyof UserFormData>(
+    field: K,
+    value: UserFormData[K],
+  ) => void;
   markCompleted: (step: number) => void;
   isFormSubmitting: boolean;
   setFormSubmitting: (value: boolean) => void;
@@ -33,14 +36,18 @@ export function OnboardingProvider({
   value: OnboardingContextValue;
   children: ReactNode;
 }) {
-  return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
+  return (
+    <OnboardingContext.Provider value={value}>
+      {children}
+    </OnboardingContext.Provider>
+  );
 }
 
 export function useOnboardingContext(): OnboardingContextValue {
   const ctx = useContext(OnboardingContext);
   if (!ctx) {
     throw new Error(
-      'useOnboardingContext must be used within an OnboardingProvider (rendered by OnboardingFlow).'
+      "useOnboardingContext must be used within an OnboardingProvider (rendered by OnboardingFlow).",
     );
   }
   return ctx;

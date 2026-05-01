@@ -17,8 +17,8 @@
  * underpinning the UI is correct for every input.
  */
 
-import fc from 'fast-check';
-import { validateUserForm } from '@/lib/validation';
+import fc from "fast-check";
+import { validateUserForm } from "@/lib/validation";
 
 type FormErrors = ReturnType<typeof validateUserForm>;
 
@@ -26,7 +26,7 @@ type FormErrors = ReturnType<typeof validateUserForm>;
 function visibleErrors(
   errors: FormErrors,
   touched: { username?: boolean; awsccId?: boolean },
-  submitted: boolean
+  submitted: boolean,
 ): FormErrors {
   if (submitted) return errors;
   const out: FormErrors = {};
@@ -35,8 +35,8 @@ function visibleErrors(
   return out;
 }
 
-describe('Property 18: Validation error inline display', () => {
-  it('after submit, every error from validate() is visible', () => {
+describe("Property 18: Validation error inline display", () => {
+  it("after submit, every error from validate() is visible", () => {
     fc.assert(
       fc.property(
         fc.string({ maxLength: 32 }),
@@ -45,13 +45,13 @@ describe('Property 18: Validation error inline display', () => {
           const errors = validateUserForm({ username, awsccId });
           const visible = visibleErrors(errors, {}, true);
           expect(visible).toEqual(errors);
-        }
+        },
       ),
-      { numRuns: 200 }
+      { numRuns: 200 },
     );
   });
 
-  it('a touched field with an error always has its message visible', () => {
+  it("a touched field with an error always has its message visible", () => {
     // Restrict to inputs guaranteed to be invalid: bad username.
     fc.assert(
       fc.property(
@@ -59,27 +59,30 @@ describe('Property 18: Validation error inline display', () => {
         fc
           .tuple(
             fc.string({ maxLength: 16 }),
-            fc.constantFrom(...' !@#$%^&*'.split('')),
-            fc.string({ maxLength: 16 })
+            fc.constantFrom(..." !@#$%^&*".split("")),
+            fc.string({ maxLength: 16 }),
           )
           .map(([a, bad, c]) => a + bad + c),
         (badUsername) => {
-          const errors = validateUserForm({ username: badUsername, awsccId: '' });
+          const errors = validateUserForm({
+            username: badUsername,
+            awsccId: "",
+          });
           const visible = visibleErrors(
             errors,
             { username: true, awsccId: true },
-            false
+            false,
           );
           // Username should have an error message.
-          expect(typeof visible.username).toBe('string');
-          expect((visible.username ?? '').length).toBeGreaterThan(0);
-        }
+          expect(typeof visible.username).toBe("string");
+          expect((visible.username ?? "").length).toBeGreaterThan(0);
+        },
       ),
-      { numRuns: 200 }
+      { numRuns: 200 },
     );
   });
 
-  it('an untouched, pre-submit field never shows an error', () => {
+  it("an untouched, pre-submit field never shows an error", () => {
     fc.assert(
       fc.property(
         fc.string({ maxLength: 32 }),
@@ -88,24 +91,24 @@ describe('Property 18: Validation error inline display', () => {
           const errors = validateUserForm({ username, awsccId });
           const visible = visibleErrors(errors, {}, false);
           expect(visible).toEqual({});
-        }
+        },
       ),
-      { numRuns: 200 }
+      { numRuns: 200 },
     );
   });
 
-  it('a valid input never produces a visible error, regardless of touched/submitted state', () => {
+  it("a valid input never produces a visible error, regardless of touched/submitted state", () => {
     const validUsername = fc
       .array(
-        fc.constantFrom(
-          ...'abcdefghijklmnopqrstuvwxyz0123456789-_'.split('')
-        ),
-        { minLength: 1, maxLength: 32 }
+        fc.constantFrom(..."abcdefghijklmnopqrstuvwxyz0123456789-_".split("")),
+        { minLength: 1, maxLength: 32 },
       )
-      .map((cs) => cs.join(''));
+      .map((cs) => cs.join(""));
     const optionalAwscc = fc.oneof(
-      fc.constant(''),
-      fc.string({ minLength: 1, maxLength: 32 }).filter((s) => s.trim().length > 0)
+      fc.constant(""),
+      fc
+        .string({ minLength: 1, maxLength: 32 })
+        .filter((s) => s.trim().length > 0),
     );
 
     fc.assert(
@@ -121,12 +124,12 @@ describe('Property 18: Validation error inline display', () => {
           const visible = visibleErrors(
             errors,
             { username: tu, awsccId: ta },
-            submitted
+            submitted,
           );
           expect(visible).toEqual({});
-        }
+        },
       ),
-      { numRuns: 200 }
+      { numRuns: 200 },
     );
   });
 });
