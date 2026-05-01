@@ -6,21 +6,31 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "jest",
+    "test:properties": "jest --testPathPattern=property.test.ts",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.1",
+    "framer-motion": "^12.38.0",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jest": "^29",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "fast-check": "^3.22.0",
+    "jest": "^29",
     "tailwindcss": "^4",
+    "ts-jest": "^29",
+    "ts-node": "^10",
     "typescript": "^5"
   }
 }

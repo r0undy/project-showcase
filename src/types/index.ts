@@ -1,0 +1,246 @@
+/**
+ * Core TypeScript Types and Interfaces
+ * AWS Community Showcase
+ */
+
+// ============================================================================
+// Data Models
+// ============================================================================
+
+export interface User {
+  id: string; // UUID
+  username: string;
+  awsccId: string;
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+export interface Project {
+  id: string; // UUID
+  title: string;
+  description: string;
+  mediaUrl?: string;
+  authorId: string; // UUID
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+export interface ProjectWithAuthor extends Project {
+  author: {
+    username: string;
+  };
+  reactionCount: number;
+  hasReacted: boolean; // For current user
+}
+
+export interface Reaction {
+  id: string; // UUID
+  userId: string; // UUID
+  projectId: string; // UUID
+  reactionType: string; // 'like', 'heart', etc.
+  createdAt: string; // ISO 8601
+}
+
+export interface OnboardingProgress {
+  id: string; // UUID
+  userId: string; // UUID
+  stepNumber: number; // 1-7
+  isCompleted: boolean;
+  completedAt?: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+// ============================================================================
+// API Request/Response Types
+// ============================================================================
+
+// POST /api/users
+export interface CreateUserRequest {
+  username: string;
+  awsccId: string;
+}
+
+export interface CreateUserResponse {
+  user: User;
+  sessionToken: string;
+}
+
+// GET /api/users/[id]
+export interface GetUserResponse {
+  user: User;
+  onboardingProgress: OnboardingProgress[];
+}
+
+// POST /api/projects
+export interface CreateProjectRequest {
+  title: string;
+  description: string;
+  mediaUrl?: string;
+}
+
+export interface CreateProjectResponse {
+  project: Project;
+}
+
+// GET /api/projects
+export interface GetProjectsResponse {
+  projects: ProjectWithAuthor[];
+}
+
+// POST /api/reactions
+export interface CreateReactionRequest {
+  projectId: string;
+  reactionType?: string; // Defaults to 'like'
+}
+
+export interface CreateReactionResponse {
+  reaction: Reaction;
+}
+
+// PATCH /api/users/[id]/progress
+export interface UpdateProgressRequest {
+  stepNumber: number;
+  isCompleted: boolean;
+}
+
+export interface UpdateProgressResponse {
+  progress: OnboardingProgress;
+}
+
+// Error Response
+export interface ErrorResponse {
+  error: string; // Error type/category
+  message: string; // Human-readable description
+  details?: unknown; // Optional additional context
+}
+
+// ============================================================================
+// Component Props Types
+// ============================================================================
+
+// Countdown Timer
+export interface CountdownTimerProps {
+  targetDate: string; // ISO 8601 format
+}
+
+export interface TimeRemaining {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+// CTA Button
+export interface CTAButtonProps {
+  onClick: () => void;
+  label: string;
+}
+
+// Onboarding Modal
+export interface OnboardingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  userId?: string; // For returning users
+}
+
+export interface OnboardingState {
+  currentStep: number; // 1-7
+  formData: {
+    username: string;
+    awsccId: string;
+  };
+  completedSteps: Set<number>;
+}
+
+// Step Navigation
+export interface StepNavigationProps {
+  currentStep: number;
+  totalSteps: number;
+  onNext: () => void;
+  onBack: () => void;
+  onStepClick: (step: number) => void;
+  canProceed: boolean;
+}
+
+// User Info Form
+export interface UserInfoFormProps {
+  onSubmit: (data: UserFormData) => Promise<void>;
+  initialData?: UserFormData;
+}
+
+export interface UserFormData {
+  username: string;
+  awsccId: string;
+}
+
+export interface ValidationErrors {
+  username?: string;
+  awsccId?: string;
+}
+
+// Setup Step
+export interface SetupStepProps {
+  stepNumber: number;
+  title: string;
+  sections: AccordionSection[];
+  isCompleted: boolean;
+  onMarkComplete: (stepNumber: number) => Promise<void>;
+}
+
+export interface AccordionSection {
+  id: string;
+  title: string;
+  content: React.ReactNode;
+}
+
+// Project Grid
+export interface ProjectGridProps {
+  initialProjects: Project[];
+}
+
+// Project Card
+export interface ProjectCardProps {
+  project: ProjectWithAuthor;
+  currentUserId: string;
+  onReact: (projectId: string) => Promise<void>;
+}
+
+// Create Project Button
+export interface CreateProjectButtonProps {
+  onClick: () => void;
+}
+
+// Project Form
+export interface ProjectFormProps {
+  onSubmit: (data: ProjectFormData) => Promise<void>;
+  onCancel: () => void;
+}
+
+export interface ProjectFormData {
+  title: string;
+  description: string;
+  mediaUrl?: string;
+}
+
+// Reaction Button
+export interface ReactionButtonProps {
+  projectId: string;
+  reactionCount: number;
+  hasReacted: boolean;
+  onReact: () => Promise<void>;
+}
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+export type ApiResponse<T> = {
+  data?: T;
+  error?: ErrorResponse;
+};
+
+export type AsyncState<T> = {
+  data: T | null;
+  loading: boolean;
+  error: ErrorResponse | null;
+};
