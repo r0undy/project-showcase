@@ -80,6 +80,8 @@ graph TB
 
 **Note 3 — Tailwind v4 theming**: With Tailwind v4, design tokens live in CSS via `@theme inline` in `src/app/globals.css`, not in `tailwind.config.ts`'s `extend.colors`. The active palette is the cosmic theme (see Note 4); the JS config block is dead code and pending removal.
 
+**Note 5 — Onboarding is a page route, not a modal**: The requirements call the onboarding flow "Onboarding_Modal" (Req 3, 16), but on 2026-05-01 the implementation moved from an in-page modal overlay to a dedicated `/welcome` route. The 7-step flow itself is unchanged (same step components, same `useOnboardingState` hook, same Property 2/3/4 navigation tests) — only the chrome around it changed. Trade-offs: the page is shareable + back-navigable + survives a refresh visually (auth/session in `localStorage` already does the heavy lifting on the data side), at the cost of losing the modal's "stay on the landing page" affordance. The CTA on the landing page becomes a `router.push('/welcome')` call. The Esc-to-close / X-button / backdrop affordances are gone; replaced with a small "← Back to home" link top-left.
+
 **Note 4 — Theme: Cosmic ("From Vibe to Live")**: On 2026-05-01 the original Linear.app aesthetic was replaced with a dark cosmic theme matching the Figma design (`https://www.figma.com/design/KQ5EAw4koMfow6jzJCHdDQ/AWS--WEBDEV-Portfolio?node-id=16-6`) and the event poster. Dark-by-default. Token mapping in `src/app/globals.css`:
 
 | Token | Hex | Source |
