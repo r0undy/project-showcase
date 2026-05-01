@@ -20,6 +20,7 @@ export interface Project {
   id: string; // UUID
   title: string;
   description: string;
+  url?: string;
   mediaUrl?: string;
   authorId: string; // UUID
   createdAt: string; // ISO 8601
@@ -78,6 +79,7 @@ export interface GetUserResponse {
 export interface CreateProjectRequest {
   title: string;
   description: string;
+  url?: string;
   mediaUrl?: string;
 }
 
@@ -225,6 +227,7 @@ export interface ProjectFormProps {
 export interface ProjectFormData {
   title: string;
   description: string;
+  url: string;
   mediaUrl?: string;
 }
 

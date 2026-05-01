@@ -1,19 +1,32 @@
 import { TopNav } from "@/components/nav/TopNav";
+import { ShowcaseGrid } from "@/components/showcase/ShowcaseGrid";
+import type { ProjectWithAuthor } from "@/types";
 
-export default function ShowcasePage() {
+async function fetchProjects(): Promise<ProjectWithAuthor[]> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/projects`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.projects ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export default async function ShowcasePage() {
+  const projects = await fetchProjects();
+
   return (
-    <main className="cosmic-bg relative flex min-h-screen items-center justify-center px-4 pb-12 pt-24 sm:px-6 sm:pb-16 sm:pt-28">
+    <main className="cosmic-bg relative min-h-screen" style={{ overflow: 'clip' }}>
       <div className="cosmic-stars" aria-hidden="true" />
-      <div className="cosmic-horizon" aria-hidden="true" />
       <TopNav active="showcase" />
 
-      <div className="relative z-10 w-full max-w-3xl text-center">
-        <h1 className="font-display text-2xl uppercase tracking-[0.02em] text-foreground sm:text-4xl">
-          Showcase
-        </h1>
-        <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-          Coming soon.
-        </p>
+      <div
+        className="relative z-10 mx-auto w-full"
+        style={{ maxWidth: '1100px', padding: '120px 24px 80px' }}
+      >
+        <ShowcaseGrid initialProjects={projects} />
       </div>
     </main>
   );

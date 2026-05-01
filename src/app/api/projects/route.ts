@@ -38,13 +38,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!body || typeof body !== 'object') {
     return errorResponse(400, 'INVALID_BODY', 'Request body must be an object.');
   }
-  const { title, description, mediaUrl } = body as {
+  const { title, description, url, mediaUrl } = body as {
     title?: unknown;
     description?: unknown;
+    url?: unknown;
     mediaUrl?: unknown;
   };
 
-  const errors = validateProjectForm({ title, description, mediaUrl });
+  const errors = validateProjectForm({ title, description, url, mediaUrl });
   if (Object.keys(errors).length > 0) {
     return errorResponse(400, 'VALIDATION_ERROR', 'Invalid input.', errors);
   }
@@ -54,6 +55,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     .insert({
       title: title as string,
       description: description as string,
+      url: typeof url === 'string' && url.length > 0 ? url : null,
       media_url: typeof mediaUrl === 'string' && mediaUrl.length > 0 ? (mediaUrl as string) : null,
       author_id: user.id,
     })
@@ -149,6 +151,7 @@ function rowToProject(row: ProjectRow): Project {
     id: row.id,
     title: row.title,
     description: row.description,
+    url: row.url ?? undefined,
     mediaUrl: row.media_url ?? undefined,
     authorId: row.author_id,
     createdAt: row.created_at,

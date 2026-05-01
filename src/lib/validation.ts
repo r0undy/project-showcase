@@ -81,15 +81,16 @@ export function validateUserForm(input: {
 
 /**
  * Validate the project-creation form.
+ * `url` is required and must be a valid http(s) URL.
  * `mediaUrl` is optional but, when present, must be a valid http(s) URL.
  */
 export function validateProjectForm(input: {
   title: unknown;
   description: unknown;
+  url?: unknown;
   mediaUrl?: unknown;
-}): { title?: string; description?: string; mediaUrl?: string } {
-  const errors: { title?: string; description?: string; mediaUrl?: string } =
-    {};
+}): { title?: string; description?: string; url?: string; mediaUrl?: string } {
+  const errors: { title?: string; description?: string; url?: string; mediaUrl?: string } = {};
   if (!isNonEmptyString(input.title)) {
     errors.title = "Title is required.";
   } else if ((input.title as string).length > 200) {
@@ -97,6 +98,9 @@ export function validateProjectForm(input: {
   }
   if (!isNonEmptyString(input.description)) {
     errors.description = "Description is required.";
+  }
+  if (!isValidUrl(input.url)) {
+    errors.url = "A valid project URL (http or https) is required.";
   }
   if (
     input.mediaUrl !== undefined &&

@@ -141,6 +141,7 @@ export type Database = {
           id: string;
           title: string;
           description: string;
+          url: string | null;
           media_url: string | null;
           author_id: string;
           created_at: string;
@@ -150,6 +151,7 @@ export type Database = {
           id?: string;
           title: string;
           description: string;
+          url?: string | null;
           media_url?: string | null;
           author_id: string;
           created_at?: string;
@@ -159,6 +161,7 @@ export type Database = {
           id?: string;
           title?: string;
           description?: string;
+          url?: string | null;
           media_url?: string | null;
           author_id?: string;
           created_at?: string;
