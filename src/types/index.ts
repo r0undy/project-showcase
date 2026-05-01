@@ -8,7 +8,7 @@
 // ============================================================================
 
 export interface User {
-  id: string; // UUID
+  id: string; // UUID — equals auth.uid() for users created via onboarding (anonymous sign-in)
   username: string;
   awsccId: string;
   createdAt: string; // ISO 8601
@@ -61,8 +61,9 @@ export interface CreateUserRequest {
 }
 
 export interface CreateUserResponse {
+  // No session token: the client signs in anonymously via supabase.auth.signInAnonymously()
+  // before calling POST /api/users, and Supabase persists the session in localStorage.
   user: User;
-  sessionToken: string;
 }
 
 // GET /api/users/[id]
