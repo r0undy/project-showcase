@@ -8,9 +8,10 @@
 // ============================================================================
 
 export interface User {
-  id: string; // UUID
+  id: string; // UUID — equals auth.uid() for users created via onboarding (anonymous sign-in)
   username: string;
-  awsccId: string;
+  awsccId?: string;
+  avatarUrl?: string;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
 }
@@ -19,19 +20,49 @@ export interface Project {
   id: string; // UUID
   title: string;
   description: string;
+  url?: string;
   mediaUrl?: string;
   authorId: string; // UUID
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
 }
 
+export interface EmojiReaction {
+  emoji: string;
+  count: number;
+  hasReacted: boolean; // whether the current user reacted with this emoji
+  reactors: Array<{ userId: string; username: string }>; // who reacted with this emoji
+}
+
 export interface ProjectWithAuthor extends Project {
   author: {
     username: string;
+    avatarUrl?: string;
   };
-  reactionCount: number;
-  hasReacted: boolean; // For current user
+  reactions: EmojiReaction[];
+  reactionCount: number; // total across all emojis
+  hasReacted: boolean; // any emoji by current user
+  reactedEmojis: string[]; // all emojis the current user has reacted with
+  commentCount: number;
+  topComments: CommentWithAuthor[]; // up to 2 most recent comments
 }
+
+export interface Comment {
+  id: string;
+  userId: string;
+  projectId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommentWithAuthor extends Comment {
+  author: { username: string; avatarUrl?: string };
+}
+
+export interface CreateCommentRequest { projectId: string; content: string; }
+export interface CreateCommentResponse { comment: CommentWithAuthor; }
+export interface GetCommentsResponse { comments: CommentWithAuthor[]; }
 
 export interface Reaction {
   id: string; // UUID
@@ -57,12 +88,14 @@ export interface OnboardingProgress {
 // POST /api/users
 export interface CreateUserRequest {
   username: string;
-  awsccId: string;
+  awsccId?: string;
+  avatarUrl?: string;
 }
 
 export interface CreateUserResponse {
+  // No session token: the client signs in anonymously via supabase.auth.signInAnonymously()
+  // before calling POST /api/users, and Supabase persists the session in localStorage.
   user: User;
-  sessionToken: string;
 }
 
 // GET /api/users/[id]
@@ -75,6 +108,7 @@ export interface GetUserResponse {
 export interface CreateProjectRequest {
   title: string;
   description: string;
+  url?: string;
   mediaUrl?: string;
 }
 
@@ -147,7 +181,8 @@ export interface OnboardingState {
   currentStep: number; // 1-7
   formData: {
     username: string;
-    awsccId: string;
+    awsccId?: string;
+    avatarUrl?: string;
   };
   completedSteps: Set<number>;
 }
@@ -170,12 +205,14 @@ export interface UserInfoFormProps {
 
 export interface UserFormData {
   username: string;
-  awsccId: string;
+  awsccId?: string;
+  avatarUrl?: string;
 }
 
 export interface ValidationErrors {
   username?: string;
   awsccId?: string;
+  avatarUrl?: string;
 }
 
 // Setup Step
@@ -219,6 +256,7 @@ export interface ProjectFormProps {
 export interface ProjectFormData {
   title: string;
   description: string;
+  url: string;
   mediaUrl?: string;
 }
 

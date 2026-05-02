@@ -128,13 +128,20 @@ describe('Onboarding Progress Property Tests', () => {
               // 3. completed_at should be a valid ISO 8601 timestamp
               expect(isValidISO8601(updatedRecord!.completed_at!)).toBe(true);
 
-              // 4. completed_at should represent the current time (within 5 second tolerance)
+              // 4. completed_at should be a recent timestamp.
+              // Allow generous tolerance to absorb clock skew between this machine
+              // and the Supabase Postgres server (the trigger uses server-side NOW()).
+              const CLOCK_SKEW_TOLERANCE_MS = 60_000;
               const completedAtDate = new Date(updatedRecord!.completed_at!);
-              expect(completedAtDate.getTime()).toBeGreaterThanOrEqual(beforeUpdate.getTime());
-              expect(completedAtDate.getTime()).toBeLessThanOrEqual(afterUpdate.getTime() + 1000);
+              expect(completedAtDate.getTime()).toBeGreaterThanOrEqual(
+                beforeUpdate.getTime() - CLOCK_SKEW_TOLERANCE_MS
+              );
+              expect(completedAtDate.getTime()).toBeLessThanOrEqual(
+                afterUpdate.getTime() + CLOCK_SKEW_TOLERANCE_MS
+              );
 
               // 5. completed_at should be within reasonable tolerance of NOW()
-              expect(isWithinTolerance(updatedRecord!.completed_at!, 5000)).toBe(true);
+              expect(isWithinTolerance(updatedRecord!.completed_at!, CLOCK_SKEW_TOLERANCE_MS)).toBe(true);
 
             } finally {
               // Cleanup

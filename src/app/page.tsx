@@ -1,65 +1,85 @@
-import Image from "next/image";
+/**
+ * Landing Page (Server Component) — Req 1.1, 1.2, 1.5, 15.1, 15.2, 17.2, 17.3.
+ *
+ * Theme: Cosmic ("From Vibe to Live"). Copy + typography mirror the event
+ * poster — Bungee display font for the headline, dark purple base with
+ * magenta glows, animated shooting stars, floating planets.
+ */
+
+import { CosmicShootingStars } from '@/components/landing/CosmicShootingStars';
+import { LandingClient } from '@/components/landing/LandingClient';
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="cosmic-bg relative flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:px-6 sm:py-16">
+      {/* Decorative layers (z-index: -1 via class, no a11y impact) */}
+      <div className="cosmic-stars" aria-hidden="true" />
+
+      <CosmicShootingStars />
+
+      {/* Planets — sized smaller on mobile via the responsive helper class. */}
+      <span
+        className="cosmic-planet cosmic-float cosmic-planet-lg"
+        aria-hidden="true"
+        style={{ top: '12%', left: '4%' }}
+      />
+      <span
+        className="cosmic-planet cosmic-float cosmic-planet-md"
+        aria-hidden="true"
+        style={{ top: '72%', right: '8%', animationDelay: '1.5s', opacity: 0.55 }}
+      />
+      <span
+        className="cosmic-planet cosmic-float cosmic-planet-sm"
+        aria-hidden="true"
+        style={{ top: '8%', right: '14%', animationDelay: '3s', opacity: 0.4 }}
+      />
+      {/* Distant planet horizon at the bottom — see globals.css `.cosmic-horizon`. */}
+      <div className="cosmic-horizon" aria-hidden="true" />
+
+      <div className="relative z-10 flex w-full max-w-3xl flex-col items-center gap-6 text-center sm:gap-8">
+        <header className="flex flex-col items-center gap-4 sm:gap-5">
+          {/* Eyebrow tagline */}
+          <span className="font-display text-[10px] tracking-[0.22em] text-foreground sm:text-xs">
+            FROM VIBE TO LIVE:
+          </span>
+
+          {/* Hero headline — wraps naturally on mobile, stacks on desktop */}
+          <h1 className="cosmic-glow-pulse font-display text-2xl uppercase leading-[1.05] tracking-[0.02em] text-foreground sm:text-4xl md:text-5xl lg:text-6xl">
+            <span
+              className="bg-linear-to-b from-white via-white to-(--glow-magenta) bg-clip-text text-transparent"
+              style={{
+                WebkitTextStroke: '1.5px color-mix(in oklab, var(--glow-magenta) 70%, transparent)',
+                paintOrder: 'stroke fill',
+              }}
+            >
+              Deploying your portfolio with AWS
+            </span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          {/* Event details — chips stack on small screens */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+            <span className="rounded-full border border-border/60 bg-card/60 px-3 py-1 text-[11px] font-medium text-foreground backdrop-blur-sm sm:px-4 sm:py-1.5 sm:text-sm">
+              May 2, 2026
+            </span>
+            <span className="rounded-full border border-border/60 bg-card/60 px-3 py-1 text-[11px] font-medium text-foreground backdrop-blur-sm sm:px-4 sm:py-1.5 sm:text-sm">
+              1:00 PM &ndash; 6:00 PM
+            </span>
+            <span className="rounded-full border border-border/60 bg-card/60 px-3 py-1 text-[11px] font-medium text-foreground backdrop-blur-sm sm:px-4 sm:py-1.5 sm:text-sm">
+              White Cloak Technologies, Pasig City
+            </span>
+          </div>
+
+          <p className="max-w-md text-xs text-muted-foreground sm:max-w-lg sm:text-sm">
+            Submit your project, react to others, and join the AWS Cloud Club PUP showcase.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        </header>
+
+        <LandingClient />
+
+        <footer className="mt-2 text-[10px] text-muted-foreground/80 sm:text-xs">
+          AWS Cloud Club PUP &middot; awscloudclub.pupmnl@gmail.com &middot; @awscc_pup
+        </footer>
+      </div>
+    </main>
   );
 }
