@@ -213,6 +213,42 @@ export type Database = {
           },
         ];
       };
+      comments: {
+        Row: {
+          id: string;
+          user_id: string;
+          project_id: string;
+          content: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          content: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          content?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "comments_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "comments_project_id_fkey";
+            columns: ["project_id"];
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       onboarding_progress: {
         Row: {
           id: string;

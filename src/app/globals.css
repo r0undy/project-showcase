@@ -423,6 +423,20 @@ body {
   }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes tooltip-in {
+  from { opacity: 0; transform: translate(-50%, calc(-100% - 4px)); }
+  to   { opacity: 1; transform: translate(-50%, -100%); }
+}
+
+@keyframes quickbar-in {
+  from { opacity: 0; transform: scale(0.8) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 /* Custom cursor — see src/components/cursor/CustomCursor.tsx */
 @media (pointer: fine) {
   html.cosmic-cursor,

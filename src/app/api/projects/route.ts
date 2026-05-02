@@ -93,7 +93,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const { data: projectsData, error: projectsErr } = await supabase
     .from('projects')
     .select('*, author:users!projects_author_id_fkey(username, avatar_url)')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
   if (projectsErr) {
     return errorResponse(500, 'INTERNAL_ERROR', 'Failed to fetch projects.', {
@@ -114,8 +114,9 @@ export async function GET(request: Request): Promise<NextResponse> {
   // grows we'd switch to a Postgres view or RPC that returns COUNT(*) directly.
   const { data: reactionsData, error: reactionsErr } = await supabase
     .from('reactions')
-    .select('project_id, user_id, reaction_type')
-    .in('project_id', projectIds);
+    .select('project_id, user_id, reaction_type, created_at, user:users!reactions_user_id_fkey(username)')
+    .in('project_id', projectIds)
+    .order('created_at', { ascending: true });
 
   if (reactionsErr) {
     return errorResponse(500, 'INTERNAL_ERROR', 'Failed to fetch reactions.', {
@@ -123,28 +124,62 @@ export async function GET(request: Request): Promise<NextResponse> {
     });
   }
 
-  // Group reactions: projectId → (emoji → count)
-  const emojiGroups = new Map<string, Map<string, number>>();
-  // projectId → set of emojis the current user has reacted with
+  // Group: projectId → (emoji → reactors[])
+  const emojiReactors = new Map<string, Map<string, Array<{ userId: string; username: string }>>>();
   const userReacted = new Map<string, Set<string>>();
   for (const r of reactionsData ?? []) {
-    if (!emojiGroups.has(r.project_id)) emojiGroups.set(r.project_id, new Map());
-    const group = emojiGroups.get(r.project_id)!;
-    group.set(r.reaction_type, (group.get(r.reaction_type) ?? 0) + 1);
+    const userObj = Array.isArray(r.user) ? r.user[0] : r.user;
+    const username = userObj?.username ?? 'unknown';
+    if (!emojiReactors.has(r.project_id)) emojiReactors.set(r.project_id, new Map());
+    const group = emojiReactors.get(r.project_id)!;
+    if (!group.has(r.reaction_type)) group.set(r.reaction_type, []);
+    group.get(r.reaction_type)!.push({ userId: r.user_id, username });
     if (currentUserId && r.user_id === currentUserId) {
       if (!userReacted.has(r.project_id)) userReacted.set(r.project_id, new Set());
       userReacted.get(r.project_id)!.add(r.reaction_type);
     }
   }
 
+  // Fetch all comments with authors (most recent first); group locally to derive
+  // per-project counts and the top 2 most recent comments for the card preview.
+  const { data: commentsData } = await supabase
+    .from('comments')
+    .select('*, author:users!comments_user_id_fkey(username, avatar_url)')
+    .in('project_id', projectIds)
+    .order('created_at', { ascending: false });
+
+  const commentCounts = new Map<string, number>();
+  const topCommentsByProject = new Map<string, import('@/types').CommentWithAuthor[]>();
+  for (const c of commentsData ?? []) {
+    commentCounts.set(c.project_id, (commentCounts.get(c.project_id) ?? 0) + 1);
+    const list = topCommentsByProject.get(c.project_id) ?? [];
+    if (list.length < 2) {
+      const authorObj = Array.isArray(c.author) ? c.author[0] : c.author;
+      list.push({
+        id: c.id,
+        userId: c.user_id,
+        projectId: c.project_id,
+        content: c.content,
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        author: {
+          username: authorObj?.username ?? 'unknown',
+          avatarUrl: authorObj?.avatar_url ?? undefined,
+        },
+      });
+      topCommentsByProject.set(c.project_id, list);
+    }
+  }
+
   const enriched: ProjectWithAuthor[] = projects.map((p) => {
     const authorObj = Array.isArray(p.author) ? p.author[0] : p.author;
-    const group = emojiGroups.get(p.id) ?? new Map<string, number>();
+    const group = emojiReactors.get(p.id) ?? new Map<string, Array<{ userId: string; username: string }>>();
     const reactedSet = userReacted.get(p.id) ?? new Set<string>();
-    const reactions = Array.from(group.entries()).map(([emoji, count]) => ({
+    const reactions = Array.from(group.entries()).map(([emoji, reactors]) => ({
       emoji,
-      count,
+      count: reactors.length,
       hasReacted: reactedSet.has(emoji),
+      reactors,
     }));
     const reactionCount = reactions.reduce((sum, r) => sum + r.count, 0);
     return {
@@ -157,6 +192,8 @@ export async function GET(request: Request): Promise<NextResponse> {
       reactionCount,
       hasReacted: reactedSet.size > 0,
       reactedEmojis: Array.from(reactedSet),
+      commentCount: commentCounts.get(p.id) ?? 0,
+      topComments: topCommentsByProject.get(p.id) ?? [],
     };
   });
 

@@ -10,6 +10,7 @@
  */
 
 import Link from 'next/link';
+import { CosmicShootingStars } from '@/components/landing/CosmicShootingStars';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 
 export function WelcomeClient() {
@@ -20,9 +21,11 @@ export function WelcomeClient() {
         paddingTop: 'clamp(3.5rem, 6vw, 5rem)',
         paddingBottom: 'clamp(2rem, 4vw, 4rem)',
       }}
-      className="cosmic-bg relative flex min-h-screen flex-col items-center"
+      className="cosmic-bg relative flex min-h-screen flex-col items-center overflow-hidden"
     >
       <div className="cosmic-stars" aria-hidden="true" />
+
+      <CosmicShootingStars />
 
       <span
         className="cosmic-planet cosmic-float cosmic-planet-md"
@@ -34,6 +37,13 @@ export function WelcomeClient() {
         aria-hidden="true"
         style={{ top: '70%', right: '10%', animationDelay: '1.5s', opacity: 0.55 }}
       />
+      <span
+        className="cosmic-planet cosmic-float cosmic-planet-sm"
+        aria-hidden="true"
+        style={{ top: '32%', right: '14%', animationDelay: '3s', opacity: 0.4 }}
+      />
+
+      <div className="cosmic-horizon" aria-hidden="true" />
 
       <Link
         href="/"

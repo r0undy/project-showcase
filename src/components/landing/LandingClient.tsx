@@ -2,26 +2,33 @@
 
 /**
  * LandingClient — owns the interactive bits of the landing hero. The CTA
- * navigates to /welcome (a real page route, not a modal) so the onboarding
- * flow is shareable/back-navigable.
+ * routes signed-in users straight to /deploy-to-aws (they've already
+ * onboarded) and unauthenticated visitors to /welcome for onboarding.
  */
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CountdownTimer } from './CountdownTimer';
+import { getBrowserSupabaseClient } from '@/lib/supabase';
 import { CTAButton } from './CTAButton';
 
-interface LandingClientProps {
-  targetDate: string;
-}
-
-export function LandingClient({ targetDate }: LandingClientProps) {
+export function LandingClient() {
   const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const supabase = getBrowserSupabaseClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   return (
-    <>
-      <CountdownTimer targetDate={targetDate} />
-
-      <CTAButton onClick={() => router.push('/welcome')} />
-    </>
+    <CTAButton
+      onClick={() => router.push(isAuthenticated ? '/deploy-to-aws' : '/welcome')}
+    />
   );
 }

@@ -6,49 +6,16 @@
  * magenta glows, animated shooting stars, floating planets.
  */
 
+import { CosmicShootingStars } from '@/components/landing/CosmicShootingStars';
 import { LandingClient } from '@/components/landing/LandingClient';
 
-const DEFAULT_TARGET = '2026-12-31T23:59:59Z';
-
-/* Shooting stars originate from the upper-right of the viewport and fly
- * diagonally down-left (see globals.css `.cosmic-shooting-star`). Positions
- * use `top` + `right`; mixing pixel offsets so the meteor shower looks
- * staggered rather than mechanically uniform. */
-const SHOOTING_STARS: Array<{
-  top: string;
-  right: string;
-  delay: string;
-  duration: string;
-}> = [
-  { top: '0',     right: '0',     delay: '0s',    duration: '2.5s' },
-  { top: '0',     right: '120px', delay: '0.6s',  duration: '3s' },
-  { top: '60px',  right: '0',     delay: '1.2s',  duration: '2s' },
-  { top: '0',     right: '320px', delay: '1.8s',  duration: '2.8s' },
-  { top: '0',     right: '600px', delay: '2.4s',  duration: '2.4s' },
-  { top: '160px', right: '40px',  delay: '3.0s',  duration: '2.6s' },
-];
-
 export default function Home() {
-  const targetDate = process.env.NEXT_PUBLIC_COUNTDOWN_TARGET ?? DEFAULT_TARGET;
-
   return (
     <main className="cosmic-bg relative flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:px-6 sm:py-16">
       {/* Decorative layers (z-index: -1 via class, no a11y impact) */}
       <div className="cosmic-stars" aria-hidden="true" />
 
-      {SHOOTING_STARS.map((s, i) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          className="cosmic-shooting-star"
-          style={{
-            top: s.top,
-            right: s.right,
-            animationDelay: s.delay,
-            animationDuration: s.duration,
-          }}
-        />
-      ))}
+      <CosmicShootingStars />
 
       {/* Planets — sized smaller on mobile via the responsive helper class. */}
       <span
@@ -104,11 +71,10 @@ export default function Home() {
 
           <p className="max-w-md text-xs text-muted-foreground sm:max-w-lg sm:text-sm">
             Submit your project, react to others, and join the AWS Cloud Club PUP showcase.
-            The launch happens in:
           </p>
         </header>
 
-        <LandingClient targetDate={targetDate} />
+        <LandingClient />
 
         <footer className="mt-2 text-[10px] text-muted-foreground/80 sm:text-xs">
           AWS Cloud Club PUP &middot; awscloudclub.pupmnl@gmail.com &middot; @awscc_pup

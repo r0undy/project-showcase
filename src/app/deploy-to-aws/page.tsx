@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CosmicShootingStars } from "@/components/landing/CosmicShootingStars";
 import { TopNav } from "@/components/nav/TopNav";
 import { getDeployGuideSections } from "@/lib/markdown";
 
@@ -12,8 +13,19 @@ export default async function DeployToAwsPage() {
   const sections = await getDeployGuideSections();
 
   return (
-    <main className="cosmic-bg relative flex min-h-screen items-center justify-center pb-12 pt-24 sm:pb-16 sm:pt-28">
+    <main className="cosmic-bg relative grid min-h-screen w-full place-items-center overflow-hidden pb-12 pt-24 sm:pb-16 sm:pt-28">
       <div className="cosmic-stars" aria-hidden="true" />
+      <CosmicShootingStars />
+      <span
+        className="cosmic-planet cosmic-float cosmic-planet-md"
+        aria-hidden="true"
+        style={{ top: '14%', left: '6%' }}
+      />
+      <span
+        className="cosmic-planet cosmic-float cosmic-planet-sm"
+        aria-hidden="true"
+        style={{ top: '68%', right: '8%', animationDelay: '1.5s', opacity: 0.5 }}
+      />
       <div className="cosmic-horizon" aria-hidden="true" />
       <TopNav active="deploy" />
 

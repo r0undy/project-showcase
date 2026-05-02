@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -8,6 +8,9 @@ import type { EmojiClickData, Theme as EmojiTheme } from 'emoji-picker-react';
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 import type { ProjectWithAuthor } from '@/types';
+import { CommentsSection, type CommentsSectionHandle } from './CommentsSection';
+import { ReactionPill } from './ReactionPill';
+import { getBrowserSupabaseClient } from '@/lib/supabase';
 
 interface ProjectSidebarProps {
   project: ProjectWithAuthor | null;
@@ -42,7 +45,38 @@ export function ProjectSidebar({
   const isOpen = project !== null;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const commentsSectionRef = useRef<CommentsSectionHandle>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => setMounted(true), []);
+
+  async function handleCommentSubmit() {
+    const trimmed = commentText.trim();
+    if (!trimmed || commentSubmitting || !project) return;
+    const supabase = getBrowserSupabaseClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    setCommentSubmitting(true);
+    setCommentText('');
+    if (textareaRef.current) { textareaRef.current.style.height = 'auto'; }
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ projectId: project.id, content: trimmed }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      commentsSectionRef.current?.addComment(data.comment);
+    } else {
+      setCommentText(trimmed);
+    }
+    setCommentSubmitting(false);
+  }
+
+  function onCommentKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCommentSubmit(); }
+  }
 
   // Close picker when sidebar closes
   useEffect(() => {
@@ -330,35 +364,20 @@ export function ProjectSidebar({
               {project && project.reactions.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
                   {project.reactions.map((r) => (
-                    <button
+                    <ReactionPill
                       key={r.emoji}
+                      reaction={r}
                       onClick={() => project && onReact(project.id, r.emoji)}
                       disabled={reactPending}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        background: r.hasReacted ? 'oklch(28% 0.1 340 / 0.4)' : 'oklch(16% 0.05 285)',
-                        border: '1px solid',
-                        borderColor: r.hasReacted ? 'oklch(65% 0.25 340 / 0.5)' : 'oklch(38% 0.06 285 / 0.4)',
-                        borderRadius: '20px',
-                        padding: '4px 12px',
-                        cursor: reactPending ? 'not-allowed' : 'pointer',
-                        color: r.hasReacted ? 'oklch(70% 0.25 340)' : 'var(--muted-foreground)',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        transition: 'all 0.15s',
-                        opacity: reactPending ? 0.6 : 1,
-                      }}
-                    >
-                      <span style={{ fontSize: '16px', lineHeight: 1 }}>{r.emoji}</span>
-                      {r.count}
-                    </button>
+                      currentUserId={currentUserId}
+                    />
                   ))}
                 </div>
               )}
 
-              {/* Add reaction button + picker */}
+              {/* Add reaction button + picker. Hidden for unauthenticated
+               * visitors since reacting requires a session. */}
+              {currentUserId && (
               <div style={{ position: 'relative' }}>
                 <button
                   onClick={() => setPickerOpen((o) => !o)}
@@ -399,8 +418,107 @@ export function ProjectSidebar({
                   </div>
                 )}
               </div>
+              )}
             </div>
+            {/* Comments list */}
+            {project && (
+              <div style={{ borderTop: '1px solid oklch(30% 0.06 285 / 0.4)', marginTop: '8px' }}>
+                <CommentsSection ref={commentsSectionRef} projectId={project.id} currentUserId={currentUserId} />
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Pinned comment composer */}
+        <div
+          style={{
+            flexShrink: 0,
+            borderTop: '1px solid oklch(30% 0.06 285 / 0.35)',
+            padding: '12px 16px',
+            background: 'oklch(10% 0.04 285)',
+          }}
+        >
+          {currentUserId ? (
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'flex-end',
+                background: 'oklch(14% 0.04 285)',
+                border: '1px solid oklch(32% 0.06 285 / 0.5)',
+                borderRadius: '12px',
+                padding: '10px 12px',
+                transition: 'border-color 0.15s',
+              }}
+              className="focus-within:border-pink-500/40!"
+            >
+              <textarea
+                ref={textareaRef}
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={onCommentKeyDown}
+                placeholder="Add a comment… (Enter to send)"
+                maxLength={500}
+                rows={1}
+                disabled={commentSubmitting || !project}
+                style={{
+                  flex: 1,
+                  background: 'none',
+                  border: 'none',
+                  outline: 'none',
+                  resize: 'none',
+                  fontSize: '13px',
+                  color: 'var(--foreground)',
+                  lineHeight: 1.55,
+                  overflowY: 'hidden',
+                  minHeight: '20px',
+                  maxHeight: '100px',
+                }}
+                onInput={(e) => {
+                  const el = e.currentTarget;
+                  el.style.height = 'auto';
+                  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+                  el.style.overflowY = el.scrollHeight > 100 ? 'auto' : 'hidden';
+                }}
+              />
+              <button
+                onClick={handleCommentSubmit}
+                disabled={!commentText.trim() || commentSubmitting || !project}
+                aria-label="Send comment"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 30,
+                  height: 30,
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: commentText.trim() && !commentSubmitting
+                    ? 'oklch(55% 0.22 340)'
+                    : 'oklch(22% 0.05 285)',
+                  color: commentText.trim() && !commentSubmitting ? 'white' : 'oklch(40% 0.06 285)',
+                  cursor: commentText.trim() && !commentSubmitting ? 'pointer' : 'not-allowed',
+                  flexShrink: 0,
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+              >
+                {commentSubmitting ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: 'spin 0.8s linear infinite' }}>
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          ) : (
+            <p style={{ margin: 0, fontSize: '13px', color: 'oklch(42% 0.06 285)', textAlign: 'center', padding: '4px 0' }}>
+              Sign in to leave a comment.
+            </p>
+          )}
         </div>
       </aside>
     </>,

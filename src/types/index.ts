@@ -31,6 +31,7 @@ export interface EmojiReaction {
   emoji: string;
   count: number;
   hasReacted: boolean; // whether the current user reacted with this emoji
+  reactors: Array<{ userId: string; username: string }>; // who reacted with this emoji
 }
 
 export interface ProjectWithAuthor extends Project {
@@ -42,7 +43,26 @@ export interface ProjectWithAuthor extends Project {
   reactionCount: number; // total across all emojis
   hasReacted: boolean; // any emoji by current user
   reactedEmojis: string[]; // all emojis the current user has reacted with
+  commentCount: number;
+  topComments: CommentWithAuthor[]; // up to 2 most recent comments
 }
+
+export interface Comment {
+  id: string;
+  userId: string;
+  projectId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommentWithAuthor extends Comment {
+  author: { username: string; avatarUrl?: string };
+}
+
+export interface CreateCommentRequest { projectId: string; content: string; }
+export interface CreateCommentResponse { comment: CommentWithAuthor; }
+export interface GetCommentsResponse { comments: CommentWithAuthor[]; }
 
 export interface Reaction {
   id: string; // UUID

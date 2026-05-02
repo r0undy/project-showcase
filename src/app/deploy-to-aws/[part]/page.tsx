@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { CosmicShootingStars } from '@/components/landing/CosmicShootingStars';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { QuickNav } from '@/components/markdown/QuickNav';
 import { TopNav } from '@/components/nav/TopNav';
@@ -27,7 +28,7 @@ export default async function DeployToAwsPartPage({
 
   return (
     <main
-      className="cosmic-bg relative min-h-screen"
+      className="cosmic-bg relative grid min-h-screen w-full place-items-center"
       style={{
         // Generous horizontal padding scales 16 → 64px so the content has
         // visible breathing room from the page edges on every viewport.
@@ -37,6 +38,17 @@ export default async function DeployToAwsPartPage({
       }}
     >
       <div className="cosmic-stars" aria-hidden="true" />
+      <CosmicShootingStars />
+      <span
+        className="cosmic-planet cosmic-float cosmic-planet-md"
+        aria-hidden="true"
+        style={{ top: '8%', left: '4%' }}
+      />
+      <span
+        className="cosmic-planet cosmic-float cosmic-planet-sm"
+        aria-hidden="true"
+        style={{ top: '60%', right: '4%', animationDelay: '1.5s', opacity: 0.45 }}
+      />
       <div className="cosmic-horizon" aria-hidden="true" />
       <TopNav active="deploy" />
 
