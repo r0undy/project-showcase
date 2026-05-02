@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { CosmicShootingStars } from "@/components/landing/CosmicShootingStars";
 import { TopNav } from "@/components/nav/TopNav";
 import { RevealListener } from "@/components/deploy/RevealListener";
+import { DeployPartsList } from "@/components/deploy/DeployPartsList";
 import { getDeployGuideSections } from "@/lib/markdown";
 import { getGlobalConfig } from "@/lib/global-config";
 
@@ -77,38 +77,7 @@ export default async function DeployToAwsPage() {
             </span>
           </div>
 
-          <div className="mt-3 flex flex-col" style={{ gap: "0.5rem" }}>
-            {sections.map((section) => (
-              <Link
-                key={section.slug}
-                href={`/deploy-to-aws/${section.slug}`}
-                className="group flex items-center justify-between rounded-xl border border-border/50 bg-card transition hover:border-accent/60"
-                style={{ padding: "0.85rem 1rem" }}
-              >
-                <div className="flex items-center" style={{ gap: "0.75rem" }}>
-                  <span
-                    aria-hidden="true"
-                    className="h-2.5 w-2.5 rounded-full border border-border/70"
-                  />
-                  <div className="flex flex-col" style={{ gap: "0.2rem" }}>
-                    <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                      Part {section.part}
-                    </span>
-                    <span className="text-sm font-semibold text-foreground sm:text-base">
-                      {section.title}
-                    </span>
-                    <span className="text-xs text-muted-foreground sm:text-sm">
-                      {PART_SUMMARIES[section.part] ??
-                        "Follow the guided steps."}
-                    </span>
-                  </div>
-                </div>
-                <span className="text-xs text-accent transition group-hover:text-foreground">
-                  Open guide
-                </span>
-              </Link>
-            ))}
-          </div>
+          <DeployPartsList sections={sections} partSummaries={PART_SUMMARIES} />
         </section>
       </div>
     </main>

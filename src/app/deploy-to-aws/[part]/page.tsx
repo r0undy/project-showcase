@@ -5,6 +5,7 @@ import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { QuickNav } from '@/components/markdown/QuickNav';
 import { TopNav } from '@/components/nav/TopNav';
 import { RevealListener } from '@/components/deploy/RevealListener';
+import { PartPresenceCard } from '@/components/deploy/PartPresenceCard';
 import { getDeployGuidePart } from '@/lib/markdown';
 import { getGlobalConfig } from '@/lib/global-config';
 
@@ -53,6 +54,7 @@ export default async function DeployToAwsPartPage({
       <div className="cosmic-horizon" aria-hidden="true" />
       <TopNav active="deploy" />
       <RevealListener />
+      <PartPresenceCard part={section.slug} />
 
       {/* Two-column layout on lg+: main content (left, centered) + sticky
        *  quick-nav (right). Below `lg`, only the main content shows. */}
