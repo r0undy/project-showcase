@@ -20,7 +20,10 @@ export default async function DeployToAwsPage() {
   const sections = await getDeployGuideSections(part4_revealed);
 
   return (
-    <main className="cosmic-bg relative grid min-h-screen w-full place-items-center overflow-hidden pb-12 pt-24 sm:pb-16 sm:pt-28">
+    <main
+      className="cosmic-bg relative grid min-h-screen w-full place-items-start justify-items-center overflow-hidden pb-12 sm:pb-16"
+      style={{ paddingTop: 'clamp(3.75rem, 4vw, 4.25rem)' }}
+    >
       <div className="cosmic-stars" aria-hidden="true" />
       <CosmicShootingStars />
       <span

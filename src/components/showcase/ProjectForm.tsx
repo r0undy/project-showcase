@@ -227,14 +227,16 @@ export function ProjectForm({ onSuccess, onCancel, initialData }: ProjectFormPro
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    background: 'oklch(10% 0.04 285)',
-    border: '1px solid oklch(35% 0.06 285 / 0.6)',
-    borderRadius: '8px',
-    padding: '10px 12px',
+    background: 'transparent',
+    border: 'none',
+    borderBottom: '1px solid oklch(35% 0.08 285 / 0.6)',
+    borderRadius: 0,
+    padding: '8px 2px',
     color: 'var(--foreground)',
     fontSize: '14px',
     outline: 'none',
     boxSizing: 'border-box',
+    transition: 'border-bottom-color 0.15s',
   };
 
   const labelStyle: React.CSSProperties = {
@@ -255,54 +257,19 @@ export function ProjectForm({ onSuccess, onCancel, initialData }: ProjectFormPro
 
   return (
     <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Title */}
-      <div>
-        <label htmlFor="proj-title" style={labelStyle}>Title</label>
-        <input
-          id="proj-title"
-          name="title"
-          type="text"
-          placeholder="My Awesome Project"
-          value={form.title}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          style={{ ...inputStyle, borderColor: errors.title ? 'oklch(65% 0.2 15 / 0.8)' : 'oklch(35% 0.06 285 / 0.6)' }}
-        />
-        {errors.title && <p style={errorStyle}>{errors.title}</p>}
-      </div>
-
-      {/* Description */}
-      <div>
-        <label htmlFor="proj-description" style={labelStyle}>Description</label>
-        <textarea
-          id="proj-description"
-          name="description"
-          rows={3}
-          placeholder="What does your project do?"
-          value={form.description}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          style={{
-            ...inputStyle,
-            resize: 'vertical',
-            borderColor: errors.description ? 'oklch(65% 0.2 15 / 0.8)' : 'oklch(35% 0.06 285 / 0.6)',
-          }}
-        />
-        {errors.description && <p style={errorStyle}>{errors.description}</p>}
-      </div>
-
-      {/* URL */}
+      {/* URL — first, since it drives the auto-screenshot */}
       <div>
         <label htmlFor="proj-url" style={labelStyle}>Project URL</label>
         <input
           id="proj-url"
           name="url"
           type="url"
+          className="underline-input"
           placeholder="https://my-project.vercel.app"
           value={form.url}
           onChange={handleChange}
           onBlur={handleBlur}
-          style={{ ...inputStyle, borderColor: errors.url ? 'oklch(65% 0.2 15 / 0.8)' : 'oklch(35% 0.06 285 / 0.6)' }}
+          style={{ ...inputStyle, borderBottomColor: errors.url ? 'oklch(65% 0.2 15 / 0.8)' : undefined }}
         />
         {errors.url && <p style={errorStyle}>{errors.url}</p>}
       </div>
@@ -501,6 +468,44 @@ export function ProjectForm({ onSuccess, onCancel, initialData }: ProjectFormPro
         />
       </div>
 
+      {/* Title */}
+      <div>
+        <label htmlFor="proj-title" style={labelStyle}>Title</label>
+        <input
+          id="proj-title"
+          name="title"
+          type="text"
+          className="underline-input"
+          placeholder="My Awesome Project"
+          value={form.title}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          style={{ ...inputStyle, borderBottomColor: errors.title ? 'oklch(65% 0.2 15 / 0.8)' : undefined }}
+        />
+        {errors.title && <p style={errorStyle}>{errors.title}</p>}
+      </div>
+
+      {/* Description */}
+      <div>
+        <label htmlFor="proj-description" style={labelStyle}>Description</label>
+        <textarea
+          id="proj-description"
+          name="description"
+          rows={3}
+          className="underline-input"
+          placeholder="What does your project do?"
+          value={form.description}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          style={{
+            ...inputStyle,
+            resize: 'vertical',
+            borderBottomColor: errors.description ? 'oklch(65% 0.2 15 / 0.8)' : undefined,
+          }}
+        />
+        {errors.description && <p style={errorStyle}>{errors.description}</p>}
+      </div>
+
       {errors.submit && (
         <p style={{ fontSize: '12px', color: 'oklch(65% 0.2 15)', textAlign: 'center' }}>{errors.submit}</p>
       )}
@@ -544,7 +549,11 @@ export function ProjectForm({ onSuccess, onCancel, initialData }: ProjectFormPro
         </button>
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .underline-input:focus { border-bottom-color: var(--accent) !important; }
+        .underline-input::placeholder { color: oklch(45% 0.06 285); }
+      `}</style>
     </form>
   );
 }
