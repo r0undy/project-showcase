@@ -30,6 +30,11 @@ export const metadata: Metadata = {
   title: 'From Vibe to Live · Deploying Your Portfolio with AWS',
   description:
     'AWS Cloud Club PUP · May 2, 2026 · White Cloak Technologies, Pasig City. Build, deploy, and showcase your portfolio with AWS.',
+  icons: {
+    icon: [{ url: '/awsccpup-logo-circle.webp', type: 'image/webp' }],
+    shortcut: '/awsccpup-logo-circle.webp',
+    apple: '/awsccpup-logo-circle.webp',
+  },
 };
 
 export default function RootLayout({

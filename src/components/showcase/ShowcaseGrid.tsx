@@ -20,7 +20,24 @@ export function ShowcaseGrid({ initialProjects }: ShowcaseGridProps) {
   const [editingProject, setEditingProject] = useState<ProjectWithAuthor | null>(null);
   const [reactingIds, setReactingIds] = useState<Set<string>>(new Set());
   const [selectedProject, setSelectedProject] = useState<ProjectWithAuthor | null>(null);
+  const [unseenCount, setUnseenCount] = useState(0);
   const currentUserIdRef = useRef<string | null>(null);
+
+  // Dynamic tab title: reflects open project + unseen activity badge while hidden.
+  useEffect(() => {
+    const base = 'Community Showcase · From Vibe to Live';
+    const focused = selectedProject ? `${selectedProject.title} · Community Showcase` : base;
+    document.title = unseenCount > 0 ? `(${unseenCount}) ${focused}` : focused;
+  }, [selectedProject, unseenCount]);
+
+  // Reset the unseen badge as soon as the tab becomes visible again.
+  useEffect(() => {
+    function onVisibility() {
+      if (!document.hidden) setUnseenCount(0);
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 
   const refreshProjects = useCallback(async () => {
     const supabase = getBrowserSupabaseClient();
@@ -79,9 +96,16 @@ export function ShowcaseGrid({ initialProjects }: ShowcaseGridProps) {
       pending = setTimeout(() => { refreshProjects(); pending = null; }, 300);
     };
 
+    const bumpIfHidden = () => {
+      if (document.hidden) setUnseenCount((n) => n + 1);
+    };
+
     const channel = supabase
       .channel('projects-live')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'projects' }, scheduleRefresh)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'projects' }, () => {
+        bumpIfHidden();
+        scheduleRefresh();
+      })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'projects' }, scheduleRefresh)
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'projects' }, (payload) => {
         const deletedId = (payload.old as { id: string }).id;
@@ -89,7 +113,10 @@ export function ShowcaseGrid({ initialProjects }: ShowcaseGridProps) {
         setSelectedProject((prev) => prev?.id === deletedId ? null : prev);
       })
       // Comments affect each card's top-comments preview + count
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, scheduleRefresh)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, () => {
+        bumpIfHidden();
+        scheduleRefresh();
+      })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'comments' }, scheduleRefresh)
       .subscribe();
 

@@ -1,7 +1,13 @@
+import type { Metadata } from 'next';
 import { CosmicShootingStars } from "@/components/landing/CosmicShootingStars";
 import { TopNav } from "@/components/nav/TopNav";
 import { ShowcaseGrid } from "@/components/showcase/ShowcaseGrid";
 import type { ProjectWithAuthor } from "@/types";
+
+export const metadata: Metadata = {
+  title: 'Community Showcase · From Vibe to Live',
+  description: 'Projects built by the AWS Cloud Club PUP Manila community.',
+};
 
 async function fetchProjects(): Promise<ProjectWithAuthor[]> {
   try {
