@@ -249,6 +249,12 @@ export type Database = {
           },
         ];
       };
+      global_config: {
+        Row: { id: number; part4_revealed: boolean; updated_at: string };
+        Insert: { id?: number; part4_revealed?: boolean; updated_at?: string };
+        Update: { part4_revealed?: boolean; updated_at?: string };
+        Relationships: [];
+      };
       onboarding_progress: {
         Row: {
           id: string;

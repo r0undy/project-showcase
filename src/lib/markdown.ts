@@ -43,6 +43,12 @@ const PART_FILES: Array<{
     title: "Make It Secure with CloudFront",
     filename: "part3.md",
   },
+  {
+    part: 4,
+    slug: "p4",
+    title: "Celebrate & Share Your Build",
+    filename: "part4.md",
+  },
 ];
 
 const resolvePartPath = (filename: string) =>
@@ -105,9 +111,12 @@ export function extractHeadings(markdown: string): MarkdownHeading[] {
 }
 
 export const getDeployGuideSections = cache(
-  async (): Promise<DeployGuideSection[]> => {
+  async (includePart4: boolean = false): Promise<DeployGuideSection[]> => {
+    const files = includePart4
+      ? PART_FILES
+      : PART_FILES.filter((p) => p.part !== 4);
     const sections = await Promise.all(
-      PART_FILES.map(async (part) => {
+      files.map(async (part) => {
         const raw = await readFile(resolvePartPath(part.filename), "utf8");
         const content = raw.trim();
         return {
@@ -123,7 +132,7 @@ export const getDeployGuideSections = cache(
 );
 
 export const getDeployGuidePart = cache(
-  async (slug?: string): Promise<DeployGuideSection | null> => {
+  async (slug?: string, includePart4: boolean = false): Promise<DeployGuideSection | null> => {
     if (!slug) {
       return null;
     }
@@ -134,7 +143,7 @@ export const getDeployGuidePart = cache(
     }
 
     const partNumber = Number(match[1]);
-    const sections = await getDeployGuideSections();
+    const sections = await getDeployGuideSections(includePart4);
     return sections.find((section) => section.part === partNumber) ?? null;
   },
 );

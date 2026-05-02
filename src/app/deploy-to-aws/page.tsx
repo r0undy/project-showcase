@@ -1,16 +1,23 @@
 import Link from "next/link";
 import { CosmicShootingStars } from "@/components/landing/CosmicShootingStars";
 import { TopNav } from "@/components/nav/TopNav";
+import { RevealListener } from "@/components/deploy/RevealListener";
 import { getDeployGuideSections } from "@/lib/markdown";
+import { getGlobalConfig } from "@/lib/global-config";
+
+// Always read the latest reveal flag — never serve a cached snapshot.
+export const dynamic = "force-dynamic";
 
 const PART_SUMMARIES: Record<number, string> = {
   1: "Receive your credentials, sign in, and set the region correctly.",
   2: "Create the S3 bucket, upload files, and enable static hosting.",
   3: "Add CloudFront for HTTPS, a CDN, and a professional URL.",
+  4: "Celebrate, ship to the showcase, and meet the rest of the community.",
 };
 
 export default async function DeployToAwsPage() {
-  const sections = await getDeployGuideSections();
+  const { part4_revealed } = await getGlobalConfig();
+  const sections = await getDeployGuideSections(part4_revealed);
 
   return (
     <main className="cosmic-bg relative grid min-h-screen w-full place-items-center overflow-hidden pb-12 pt-24 sm:pb-16 sm:pt-28">
@@ -28,6 +35,7 @@ export default async function DeployToAwsPage() {
       />
       <div className="cosmic-horizon" aria-hidden="true" />
       <TopNav active="deploy" />
+      <RevealListener />
 
       <div
         className="relative z-10 mx-auto flex w-full max-w-5xl flex-col"

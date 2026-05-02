@@ -4,23 +4,24 @@ import { CosmicShootingStars } from '@/components/landing/CosmicShootingStars';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { QuickNav } from '@/components/markdown/QuickNav';
 import { TopNav } from '@/components/nav/TopNav';
-import { getDeployGuidePart, getDeployGuideSections } from '@/lib/markdown';
+import { RevealListener } from '@/components/deploy/RevealListener';
+import { getDeployGuidePart } from '@/lib/markdown';
+import { getGlobalConfig } from '@/lib/global-config';
+
+// /p4 must be checked against the live reveal flag, not pre-rendered.
+export const dynamic = 'force-dynamic';
 
 interface DeployToAwsPartPageProps {
   // Next.js 15+ App Router: route params are now an async Promise.
   params: Promise<{ part: string }>;
 }
 
-export async function generateStaticParams() {
-  const sections = await getDeployGuideSections();
-  return sections.map((section) => ({ part: section.slug }));
-}
-
 export default async function DeployToAwsPartPage({
   params,
 }: DeployToAwsPartPageProps) {
   const { part } = await params;
-  const section = await getDeployGuidePart(part);
+  const { part4_revealed } = await getGlobalConfig();
+  const section = await getDeployGuidePart(part, part4_revealed);
 
   if (!section) {
     notFound();
@@ -51,6 +52,7 @@ export default async function DeployToAwsPartPage({
       />
       <div className="cosmic-horizon" aria-hidden="true" />
       <TopNav active="deploy" />
+      <RevealListener />
 
       {/* Two-column layout on lg+: main content (left, centered) + sticky
        *  quick-nav (right). Below `lg`, only the main content shows. */}
